@@ -9,7 +9,7 @@
   * @subpackage libraries
   * @category   library
   * @version    0.1
-  * @author     Vincent Bambico <vb@newmediaservices.com.au>
+  * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
