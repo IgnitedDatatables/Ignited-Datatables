@@ -94,7 +94,7 @@
     */
     public function generate_from_sql($query)
     {
-      die('Make a datatable output here based on passed sql statement');
+      //previous able_datatables code start here adding new functions as needed
     }
 
     /**
