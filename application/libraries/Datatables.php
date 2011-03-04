@@ -94,7 +94,7 @@
     */
     public function generate_from_sql($query)
     {
-      //previous able_datatables code start here adding new functions as needed
+      //add sql mode code here
     }
 
     /**
