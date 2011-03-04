@@ -88,6 +88,7 @@
     /**
     * Builds all the necessary query segments and performs the main query based on passed query
     *
+    * @todo add the necessary code and additional functions to make it work
     * @param string $query
     * @return string
     */
