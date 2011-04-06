@@ -246,7 +246,7 @@
 
         $sWhere = substr_replace($sWhere, '', -3);
 
-        if(isset($jointbl) && is_array($jointbl))
+        if(isset($jointables) && is_array($jointables))
         {
           $sWhere .= 'OR ';
 
