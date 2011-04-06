@@ -85,7 +85,7 @@
       $iFilteredTotal = $aResultFilterTotal[0]['FOUND_ROWS()'];
       $rResultTotal = $this->get_total_data_set_length($table, $index, $sWhere);
       $aResultTotal = $rResultTotal->result_array();
-      $iTotal = $aResultTotal[0]['COUNT(' . $index . ')'];
+      $iTotal = $aResultTotal[0]['COUNT(' . $table . '.' . $index . ')'];
       return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult);
     }
 
