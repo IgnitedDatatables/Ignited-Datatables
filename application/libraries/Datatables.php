@@ -2,13 +2,13 @@
   /**
   * Ignited Datatables
   *
-  * This class/library is an attempt to port the native Datatables server-side implementation by Allan Jardine
-  * found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter framework
+  * This is a wrapper class/library based on the native Datatables server-side implementation by Allan Jardine
+  * found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter
   *
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.1
+  * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -55,6 +55,9 @@
         case 3:
           $result = $this->__call('generate_from_tci', $args);
           break;
+        case 4:
+          $result = $this->__call('generate_from_join', $args);
+          break;
         default;
           die('Invalid set of arguments passed.');
       }
@@ -66,7 +69,7 @@
     * Builds all the necessary query segments and performs the main query based on passed arguments
     *
     * @param string $table
-    * @param string $columns
+    * @param mixed $columns
     * @param string $index
     * @return string
     */
@@ -82,6 +85,32 @@
       $rResultTotal = $this->get_total_data_set_length($table, $index, $sWhere);
       $aResultTotal = $rResultTotal->result_array();
       $iTotal = $aResultTotal[0]['COUNT($index)'];
+      return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult);
+    }
+
+    /**
+    * Builds all the necessary query segments and performs the main query based on passed arguments including join tables
+    *
+    * @param string $table
+    * @param mixed $columns
+    * @param string $index
+    * @param mixed $jointables
+    * @return string
+    */
+    public function generate_from_join($table, $columns, $index, $jointables)
+    {
+      $columns = $this->get_referenced_columns($columns, $table, $jointables);
+      $tablenames = $this->get_aliased_tables($columns, $table, $jointables);
+      $sLimit = $this->get_paging();
+      $sOrder = $this->get_ordering($columns, $table);
+      $sWhere = $this->get_filtering_join($columns, $table, $jointables);
+      $rResult = $this->get_display_data($tablenames, $columns, $sWhere, $sOrder, $sLimit);
+      $rResultFilterTotal = $this->get_data_set_length();
+      $aResultFilterTotal = $rResultFilterTotal->result_array();
+      $iFilteredTotal = $aResultFilterTotal[0]['FOUND_ROWS()'];
+      $rResultTotal = $this->get_total_data_set_length($table, $index, $sWhere, $tablenames);
+      $aResultTotal = $rResultTotal->result_array();
+      $iTotal = $aResultTotal[0]['COUNT(' . $table . '.' . $index . ')'];
       return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult);
     }
 
@@ -181,6 +210,72 @@
     }
 
     /**
+    * Creates a filtering query segment for joins
+    *
+    * @param mixed $columns
+    * @param string $table
+    * @param mixed $jointables
+    * @return string
+    */
+    protected function get_filtering_join($columns, $table, $jointables)
+    {
+      $sWhere = '';
+
+      if(isset($jointables) && is_array($jointables))
+      {
+        $sWhere = 'WHERE ';
+
+        foreach($jointables as $jt_col_key => $jt_col_val)
+          $sWhere .= $jt_col_val['opt'] . ' AND ';
+
+        $sWhere = substr_replace($sWhere, '', -4);
+      }      
+      
+      if($this->ci->input->post('sSearch') != '')
+      {
+        if(isset($jointables) || is_array($jointables))
+          $sWhere .= ' AND ';
+        else
+          $sWhere .= 'WHERE ';
+
+        $sWhere .= '(';
+
+        for($i = 0; $i < count($columns); $i++)
+          $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
+
+        $sWhere = substr_replace($sWhere, '', -3);
+
+        if(isset($jointbl) && is_array($jointbl))
+        {
+          $sWhere .= 'OR ';
+
+          foreach($jointables as $jt_col_key => $jt_col_val)
+            for($i = 0; $i < count($jt_col_val['columns']); $i++)
+              $sWhere .= $jt_col_key . '.' . $jt_col_val['columns'][$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
+
+          $sWhere = substr_replace($sWhere, '', -3);
+        }
+
+        $sWhere .= ')';
+      }
+    
+      for($i = 0; $i < count($columns); $i++)
+      {
+        if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
+        {
+          if($sWhere == '')
+            $sWhere = 'WHERE ';
+          else
+            $sWhere .= ' AND ';
+
+          $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch_' . $i) . "%' ";
+        }
+      }
+
+      return $sWhere;
+    }
+
+    /**
     * Combines all created query segments to build the main query
     *
     * @param string $table
@@ -218,16 +313,58 @@
     * @param string $table
     * @param string $index
     * @param string $sWhere
+    * @param string $tablenames optional and is used for joins only
     * @return string
     */
-    protected function get_total_data_set_length($table, $index, $sWhere)
+    protected function get_total_data_set_length($table, $index, $sWhere, $tablenames = null)
     {
+      $from = ($tablenames != null)? $tablenames : $table;
+
       return $this->ci->db->query
       ('
         SELECT COUNT(' . $index . ')
-        FROM $table
+        FROM $from
         $sWhere
       ');
+    }
+
+    /**
+    * Creates a query segment with table references for column names
+    *
+    * @param mixed $columns
+    * @param string $table
+    * @param mixed $jointables
+    * @return string
+    */
+    protected function get_referenced_columns($columns, $table, $jointables)
+    {
+      foreach($columns as $column)
+        $tabledotcolumn[] = $table . '.' . $column;
+
+      foreach($jointables as $jointable_key => $jointable)
+        foreach($jointable['columns'] as $jcolumn_key => $jcolumn_val)
+          $tabledotcolumn[] = $jointable_key . '.' . $jcolumn_val;
+
+      return $tabledotcolumn;
+    }
+
+    /**
+    * Creates a query segment with aliased table names
+    *
+    * @param mixed $columns
+    * @param string $table
+    * @param mixed $jointables
+    * @return string
+    */
+    protected function get_aliased_tables($columns, $table, $jointables)
+    {
+      $tables = $table;
+
+      if(is_array($jointables) && count($jointables) > 0)
+        foreach ($jointables as $jointable_key => $jointable)
+          $tables .= ', ' . $jointable_key;
+
+      return $tables;
     }
 
     /**
