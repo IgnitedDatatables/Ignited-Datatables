@@ -104,7 +104,7 @@
       $tablenames = $this->get_aliased_tables($columns, $table, $jointables);
       $sLimit = $this->get_paging();
       $sOrder = $this->get_ordering($columns, $table);
-      $sWhere = $this->get_filtering_join($columns, $table, $jointables);
+      $sWhere = $this->get_filtering_join($columns, $jointables);
       $rResult = $this->get_display_data($tablenames, $columns, $sWhere, $sOrder, $sLimit);
       $rResultFilterTotal = $this->get_data_set_length();
       $aResultFilterTotal = $rResultFilterTotal->result_array();
