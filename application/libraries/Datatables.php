@@ -274,8 +274,8 @@
       return $this->ci->db->query
       ('
         SELECT COUNT(' . $index . ')
-        FROM $from
-        $sWhere
+        FROM ' . $from . '
+        ' . $sWhere . '
       ');
     }
 
