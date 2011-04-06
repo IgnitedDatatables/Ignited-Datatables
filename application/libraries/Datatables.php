@@ -11,6 +11,7 @@
   * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
+  *             Yusuf Özdemir <numberone.fatalrhymer@gmail.com>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
   class Datatables
@@ -379,6 +380,7 @@
     protected function produce_output($columns, $iTotal, $iFilteredTotal, $rResult)
     {
       $aaData = array();
+      $sColumnOrder = '';
 
       foreach($rResult->result_array() as $row_key => $row_val)
       {
@@ -409,12 +411,18 @@
         */
       }
 
+      foreach($columns as $col_key => $col_val)
+        $sColumnOrder .= $col_val . ',';
+
+      $sColumnOrder = substr_replace($sColumnOrder, '', -1);
+
       $sOutput = array
       (
         'sEcho'                => intval($this->ci->input->post('sEcho')),
         'iTotalRecords'        => $iTotal,
         'iTotalDisplayRecords' => $iFilteredTotal,
-        'aaData'               => $aaData
+        'aaData'               => $aaData,
+        'sColumns'             => $sColumnOrder
       );
 
       return json_encode($sOutput);
