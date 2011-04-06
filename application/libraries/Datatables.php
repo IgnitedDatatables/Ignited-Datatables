@@ -273,7 +273,7 @@
 
       return $this->ci->db->query
       ('
-        SELECT COUNT(' . $table . "." . $index . ')
+        SELECT COUNT(' . $table . '.' . $index . ')
         FROM ' . $from . '
         ' . $sWhere . '
       ');
