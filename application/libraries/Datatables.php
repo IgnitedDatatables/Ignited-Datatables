@@ -11,7 +11,7 @@
   * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
-  *             Yusuf �zdemir <numberone.fatalrhymer@gmail.com>
+  *             Yusuf Özdemir <numberone.fatalrhymer@gmail.com>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
   class Datatables
