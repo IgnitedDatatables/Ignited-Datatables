@@ -9,7 +9,7 @@ Fork   : https://github.com/IgnitedDatatables/Ignited-Datatables
 Discuss: http://codeigniter.com/forums/viewthread/160896/
 Contact: Vincent Bambico <metal.conspiracy@gmail.com>
          Peter Trerotola <petroz@mac.com>
-         Yusuf Özdemir <yusuf@ozdemir.be>
+         Yusuf Ã–zdemir <yusuf@ozdemir.be>
 
 =======
 Install
