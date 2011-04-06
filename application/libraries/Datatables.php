@@ -214,27 +214,26 @@
     * Creates a filtering query segment for joins
     *
     * @param mixed $columns
-    * @param string $table
     * @param mixed $jointables
     * @return string
     */
-    protected function get_filtering_join($columns, $table, $jointables)
+    protected function get_filtering_join($columns, $jointables)
     {
       $sWhere = '';
-
-      if(isset($jointables) && is_array($jointables))
+	
+      if(isset($jointables) && is_array($jointables))    
       {
         $sWhere = 'WHERE ';
-
+		
         foreach($jointables as $jt_col_key => $jt_col_val)
-          $sWhere .= $jt_col_val['opt'] . ' AND ';
+          $sWhere .= $jt_col_val['fk'] . ' AND ';
 
         $sWhere = substr_replace($sWhere, '', -4);
-      }      
-      
+      } 
+
       if($this->ci->input->post('sSearch') != '')
       {
-        if(isset($jointables) || is_array($jointables))
+        if(isset($jointables) && is_array($jointables)) 
           $sWhere .= ' AND ';
         else
           $sWhere .= 'WHERE ';
@@ -245,21 +244,9 @@
           $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
 
         $sWhere = substr_replace($sWhere, '', -3);
-
-        if(isset($jointables) && is_array($jointables))
-        {
-          $sWhere .= 'OR ';
-
-          foreach($jointables as $jt_col_key => $jt_col_val)
-            for($i = 0; $i < count($jt_col_val['columns']); $i++)
-              $sWhere .= $jt_col_key . '.' . $jt_col_val['columns'][$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
-
-          $sWhere = substr_replace($sWhere, '', -3);
-        }
-
         $sWhere .= ')';
       }
-    
+
       for($i = 0; $i < count($columns); $i++)
       {
         if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
