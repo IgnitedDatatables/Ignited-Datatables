@@ -196,7 +196,12 @@
 
       if($this->ci->input->post('sSearch') != '')
       {
-        $sWhere = 'WHERE (';
+        if(isset($jointables) && is_array($jointables))
+          $sWhere .= ' AND ';
+        else
+          $sWhere .= 'WHERE ';
+
+        $sWhere .= '(';
 
         for($i = 0; $i < count($columns); $i++)
           $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
