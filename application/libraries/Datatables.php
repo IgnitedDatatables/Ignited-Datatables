@@ -11,7 +11,7 @@
   * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
-  *             Yusuf Özdemir <numberone.fatalrhymer@gmail.com>
+  *             Yusuf ï¿½zdemir <numberone.fatalrhymer@gmail.com>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
   class Datatables
@@ -246,7 +246,7 @@
 
         $sWhere = substr_replace($sWhere, '', -3);
 
-        if(isset($jointbl) && is_array($jointbl))
+        if(isset($jointables) && is_array($jointables))
         {
           $sWhere .= 'OR ';
 
