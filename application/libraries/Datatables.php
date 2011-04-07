@@ -11,7 +11,7 @@
   * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
-  *             Yusuf Özdemir <numberone.fatalrhymer@gmail.com>
+  *             Yusuf Özdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
   class Datatables
@@ -85,7 +85,7 @@
       $iFilteredTotal = $aResultFilterTotal[0]['FOUND_ROWS()'];
       $rResultTotal = $this->get_total_data_set_length($table, $index, $sWhere);
       $aResultTotal = $rResultTotal->result_array();
-      $iTotal = $aResultTotal[0]['COUNT($index)'];
+      $iTotal = $aResultTotal[0]['COUNT(' . $table . '.' . $index . ')'];
       return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult);
     }
 
@@ -104,7 +104,7 @@
       $tablenames = $this->get_aliased_tables($columns, $table, $jointables);
       $sLimit = $this->get_paging();
       $sOrder = $this->get_ordering($columns, $table);
-      $sWhere = $this->get_filtering_join($columns, $table, $jointables);
+      $sWhere = $this->get_filtering($columns, $jointables);
       $rResult = $this->get_display_data($tablenames, $columns, $sWhere, $sOrder, $sLimit);
       $rResultFilterTotal = $this->get_data_set_length();
       $aResultFilterTotal = $rResultFilterTotal->result_array();
@@ -177,48 +177,10 @@
     * Creates a filtering query segment
     *
     * @param string $columns
+    * @param mixed $jointables optional and is used for joins only
     * @return string
     */
-    protected function get_filtering($columns)
-    {
-      $sWhere = '';
-
-      if($this->ci->input->post('sSearch') != '')
-      {
-        $sWhere = 'WHERE (';
-
-        for($i = 0; $i < count($columns); $i++)
-          $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
-
-        $sWhere = substr_replace($sWhere, '', -3);
-        $sWhere .= ')';
-      }
-
-      for($i = 0; $i < count($columns); $i++)
-      {
-        if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
-        {
-          if($sWhere == '')
-            $sWhere = 'WHERE ';
-          else
-            $sWhere .= ' AND ';
-
-          $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch_' . $i) . "%' ";
-        }
-      }
-
-      return $sWhere;
-    }
-
-    /**
-    * Creates a filtering query segment for joins
-    *
-    * @param mixed $columns
-    * @param string $table
-    * @param mixed $jointables
-    * @return string
-    */
-    protected function get_filtering_join($columns, $table, $jointables)
+    protected function get_filtering($columns, $jointables = null)
     {
       $sWhere = '';
 
@@ -227,14 +189,14 @@
         $sWhere = 'WHERE ';
 
         foreach($jointables as $jt_col_key => $jt_col_val)
-          $sWhere .= $jt_col_val['opt'] . ' AND ';
+          $sWhere .= $jt_col_val['fk'] . ' AND ';
 
         $sWhere = substr_replace($sWhere, '', -4);
-      }      
-      
+      }
+
       if($this->ci->input->post('sSearch') != '')
       {
-        if(isset($jointables) || is_array($jointables))
+        if(isset($jointables) && is_array($jointables))
           $sWhere .= ' AND ';
         else
           $sWhere .= 'WHERE ';
@@ -245,21 +207,9 @@
           $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
 
         $sWhere = substr_replace($sWhere, '', -3);
-
-        if(isset($jointables) && is_array($jointables))
-        {
-          $sWhere .= 'OR ';
-
-          foreach($jointables as $jt_col_key => $jt_col_val)
-            for($i = 0; $i < count($jt_col_val['columns']); $i++)
-              $sWhere .= $jt_col_key . '.' . $jt_col_val['columns'][$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
-
-          $sWhere = substr_replace($sWhere, '', -3);
-        }
-
         $sWhere .= ')';
       }
-    
+
       for($i = 0; $i < count($columns); $i++)
       {
         if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
@@ -291,10 +241,10 @@
       return $this->ci->db->query
       ('
         SELECT SQL_CALC_FOUND_ROWS ' . str_replace(" , ", " ", implode(", ", $columns)) . '
-        FROM $table
-        $sWhere
-        $sOrder
-        $sLimit
+        FROM ' . $table . '
+        ' . $sWhere . '
+        ' . $sOrder . '
+        ' . $sLimit . '
       ');
     }
 
@@ -323,9 +273,9 @@
 
       return $this->ci->db->query
       ('
-        SELECT COUNT(' . $index . ')
-        FROM $from
-        $sWhere
+        SELECT COUNT(' . $table . '.' . $index . ')
+        FROM ' . $from . '
+        ' . $sWhere . '
       ');
     }
 

@@ -2,14 +2,14 @@
 * Ignited Datatables *
 **********************
 
-Ignited Datatables is an attempt to port the native Datatables server-side implementation by Allan Jardine
-found at http://datatables.net/examples/data_sources/server_side.html for the CodeIgniter framework
+Ignited Datatables is a wrapper class/library based on the native Datatables server-side implementation by Allan Jardine
+found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter
 
 Fork   : https://github.com/IgnitedDatatables/Ignited-Datatables
 Discuss: http://codeigniter.com/forums/viewthread/160896/
 Contact: Vincent Bambico <metal.conspiracy@gmail.com>
          Peter Trerotola <petroz@mac.com>
-         Yusuf Özdemir <numberone.fatalrhymer@gmail.com>
+         Yusuf Özdemir <yusuf@ozdemir.be>
 
 =======
 Install
