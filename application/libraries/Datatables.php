@@ -241,7 +241,7 @@
     {
       return $this->ci->db->query
       ("
-        SELECT SQL_CALC_FOUND_ROWS " . str_replace(" , ", " ", implode(", ", $columns)) . "
+        SELECT SQL_CALC_FOUND_ROWS " . str_replace(' , ', ' ', implode(', ', $columns)) . "
         FROM $table
         $sWhere
         $sOrder 
