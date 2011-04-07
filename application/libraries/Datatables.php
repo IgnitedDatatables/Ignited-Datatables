@@ -11,7 +11,7 @@
   * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Peter Trerotola <petroz@mac.com>
-  *             Yusuf Ã–zdemir <yusuf@ozdemir.be>
+  *             Yusuf Özdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
   class Datatables
@@ -85,7 +85,7 @@
       $iFilteredTotal = $aResultFilterTotal[0]['FOUND_ROWS()'];
       $rResultTotal = $this->get_total_data_set_length($table, $index, $sWhere);
       $aResultTotal = $rResultTotal->result_array();
-      $iTotal = $aResultTotal[0]['COUNT($index)'];
+      $iTotal = $aResultTotal[0]['COUNT(' . $table . '.' . $index . ')'];
       return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult);
     }
 
@@ -242,10 +242,10 @@
       return $this->ci->db->query
       ('
         SELECT SQL_CALC_FOUND_ROWS ' . str_replace(" , ", " ", implode(", ", $columns)) . '
-        FROM $table
-        $sWhere
-        $sOrder
-        $sLimit
+        FROM ' . $table . '
+        ' . $sWhere . '
+        ' . $sOrder . '
+        ' . $sLimit . '
       ');
     }
 
@@ -274,9 +274,9 @@
 
       return $this->ci->db->query
       ('
-        SELECT COUNT(' . $index . ')
-        FROM $from
-        $sWhere
+        SELECT COUNT(' . $table . '.' . $index . ')
+        FROM ' . $from . '
+        ' . $sWhere . '
       ');
     }
 
