@@ -162,9 +162,10 @@
       if($this->ci->input->post('iSortCol_0') != null)
       {
         $sOrder = 'ORDER BY ';
+        $sColumnsArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
 
         for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-          $sOrder .= $columns[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
+          $sOrder .= $sColumnsArray[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
 
         $sOrder = substr_replace($sOrder, '', -2);
         if($sOrder == 'ORDER BY') $sOrder = '';
