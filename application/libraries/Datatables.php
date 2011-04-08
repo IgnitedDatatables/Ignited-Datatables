@@ -210,22 +210,14 @@
       {
         if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
         {
-          if($sWhere == '')
-            $sWhere = 'WHERE ';
-          else
-            $sWhere .= ' AND ';
-
+          $sWhere .= ($sWhere == '')? 'WHERE ' : ' AND ';
           $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch_' . $i) . "%' ";
         }
       }
 
       if(isset($custom_filter) && $custom_filter != null)
       {
-        if($sWhere == '')
-          $sWhere = 'WHERE ';
-        else
-          $sWhere .= ' AND ';
-
+        $sWhere .= ($sWhere == '')? 'WHERE ' : ' AND ';
         $sWhere .= $custom_filter;
       }
 
