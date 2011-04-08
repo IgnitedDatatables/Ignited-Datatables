@@ -57,7 +57,7 @@
           $result = $this->__call('generate_from_tci', $args);
           break;
         case 4:
-          $result = $this->__call('generate_from_join', $args);
+          $result = $this->__call('generate_from_advanced', $args);
           break;
         default;
           die('Invalid set of arguments passed.');
@@ -95,16 +95,19 @@
     * @param string $table
     * @param mixed $columns
     * @param string $index
-    * @param mixed $jointables
+    * @param mixed $options
     * @return string
     */
-    public function generate_from_join($table, $columns, $index, $jointables)
+    public function generate_from_advanced($table, $columns, $index, $options)
     {
-      $columns = $this->get_referenced_columns($columns, $table, $jointables);
+      $jointables = (isset($options['jointables']) && is_array($options['jointables']))? $options['jointables'] : $table;
+      $custom_columns = (isset($options['custom_columns']) && is_array($options['custom_columns']))? $options['custom_columns'] : '';
+      $custom_filter = (isset($options['custom_filter']) && $options['custom_filter'] != '')? $options['custom_filter'] : null;
       $tablenames = $this->get_aliased_tables($columns, $table, $jointables);
+      $columns = $this->get_referenced_columns($columns, $table, $jointables);
       $sLimit = $this->get_paging();
       $sOrder = $this->get_ordering($columns, $table);
-      $sWhere = $this->get_filtering($columns, $jointables);
+      $sWhere = $this->get_filtering($columns, $jointables, $custom_filter);
       $rResult = $this->get_display_data($tablenames, $columns, $sWhere, $sOrder, $sLimit);
       $rResultFilterTotal = $this->get_data_set_length();
       $aResultFilterTotal = $rResultFilterTotal->result_array();
@@ -112,7 +115,7 @@
       $rResultTotal = $this->get_total_data_set_length($table, $index, $sWhere, $tablenames);
       $aResultTotal = $rResultTotal->result_array();
       $iTotal = $aResultTotal[0]["COUNT($table.$index)"];
-      return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult);
+      return $this->produce_output($columns, $iTotal, $iFilteredTotal, $rResult, $custom_columns);
     }
 
     /**
@@ -141,11 +144,7 @@
       else
       {
         $iDisplayLength = $this->ci->input->post('iDisplayLength');
-
-        if(empty($iDisplayLength))
-          $sLimit = 'LIMIT 0,10';
-        else
-          $sLimit = 'LIMIT 0,' . $iDisplayLength;
+        $sLimit = (empty($iDisplayLength))? 'LIMIT 0,10' : 'LIMIT 0,' . $iDisplayLength;
       }
 
       return $sLimit;
@@ -181,7 +180,7 @@
     * @param mixed $jointables optional and is used for joins only
     * @return string
     */
-    protected function get_filtering($columns, $jointables = null)
+    protected function get_filtering($columns, $jointables = null, $custom_filter = null)
     {
       $sWhere = '';
 
@@ -197,11 +196,7 @@
 
       if($this->ci->input->post('sSearch') != '')
       {
-        if(isset($jointables) && is_array($jointables))
-          $sWhere .= ' AND ';
-        else
-          $sWhere .= 'WHERE ';
-
+        $sWhere .= (isset($jointables) && is_array($jointables))? ' AND ' : 'WHERE ';
         $sWhere .= '(';
 
         for($i = 0; $i < count($columns); $i++)
@@ -222,6 +217,16 @@
 
           $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch_' . $i) . "%' ";
         }
+      }
+
+      if(isset($custom_filter) && $custom_filter != null)
+      {
+        if($sWhere == '')
+          $sWhere = 'WHERE ';
+        else
+          $sWhere .= ' AND ';
+
+        $sWhere .= $custom_filter;
       }
 
       return $sWhere;
@@ -328,7 +333,7 @@
     * @param string $rResult
     * @return string
     */
-    protected function produce_output($columns, $iTotal, $iFilteredTotal, $rResult)
+    protected function produce_output($columns, $iTotal, $iFilteredTotal, $rResult, $custom_columns = '')
     {
       $aaData = array();
       $sColumnOrder = '';
@@ -340,30 +345,28 @@
           if($row_val[$col_key] == 'version')
             $aaData[$row_key][$col_key] = ($aaData[$row_key][$col_key] == 0)? '-' : $col_val;
           else
-          {
-            /*
-              you can manipulate your result data here
-              like wrapping your result in additional html tags for example:
-
-              $aaData[$row_key][] = '<span class="additionalTag">' . $col_val . '</span>';
-
-              you can also add further logic based on column specific values
-              but by default, I'm leaving it as queried
-            */
             $aaData[$row_key][] = $col_val;
-          }
         }
 
-        /*
-          add additional columns here
-          like adding a Delete Row control for example:
-
-          $aaData[$row_key][] = '<a href="#">Delete Button</a>';
-        */
+        if(isset($custom_columns) && is_array($custom_columns))
+        {
+          foreach($custom_columns as $cus_col_key => $cus_col_val)
+          {
+            if(isset($cus_col_val[1]) && is_array($cus_col_val[1]))
+              foreach($cus_col_val[1] as $cus_colr_key => $cus_colr_val)
+                $aaData[$row_key][] = str_ireplace('$' . ($cus_colr_key + 1), $aaData[$row_key][array_search($cus_colr_val, $columns)], $cus_col_val[0]);
+            else
+              $aaData[$row_key][] =  $cus_col_val[0];
+          }
+        }
       }
 
       foreach($columns as $col_key => $col_val)
         $sColumnOrder .= $col_val . ',';
+
+      if(isset($custom_columns) && is_array($custom_columns))
+        foreach($custom_columns as $cus_col_key => $cus_col_val)
+          $sColumnOrder .= $cus_col_key . ',';
 
       $sColumnOrder = substr_replace($sColumnOrder, '', -1);
 
