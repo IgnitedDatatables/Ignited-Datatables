@@ -161,13 +161,14 @@
       if($this->ci->input->post('iSortCol_0') != null)
       {
         $sOrder = 'ORDER BY ';
-        $sColumnsArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
+        $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
 
         for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-          $sOrder .= $sColumnsArray[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
+	   if ($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns))
+              $sOrder .= $sColArray[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
 
         $sOrder = substr_replace($sOrder, '', -2);
-        if($sOrder == 'ORDER BY') $sOrder = '';
+        if($sOrder == 'ORDER BY' || $sOrder == 'ORDER B') $sOrder = '';
       }
 
       return $sOrder;
