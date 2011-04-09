@@ -200,8 +200,12 @@
         $sWhere .= (isset($jointables) && is_array($jointables))? ' AND ' : 'WHERE ';
         $sWhere .= '(';
 
-        for($i = 0; $i < count($columns); $i++)
-          $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
+        $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
+		
+        for($i = 0; $i < count($sColArray); $i++)
+			if($this->ci->input->post('bSearchable_' . $i) == 'true')
+			if ($sColArray[$i] && in_array($sColArray[$i], $columns))
+          		$sWhere .= $sColArray[$i] . " LIKE '%" . mysql_real_escape_string($this->ci->input->post('sSearch')) . "%' OR ";
 
         $sWhere = substr_replace($sWhere, '', -3);
         $sWhere .= ')';
@@ -212,7 +216,7 @@
         if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
         {
           $sWhere .= ($sWhere == '')? 'WHERE ' : ' AND ';
-          $sWhere .= $columns[$i] . " LIKE '%" . $this->ci->input->post('sSearch_' . $i) . "%' ";
+          $sWhere .= $columns[$i] . " LIKE '%" . mysql_real_escape_string($this->ci->input->post('sSearch_' . $i)) . "%' ";
         }
       }
 
