@@ -100,7 +100,7 @@
     */
     public function generate_from_advanced($table, $columns, $index, $options)
     {
-      $jointables = (isset($options['jointables']) && is_array($options['jointables']))? $options['jointables'] : '';
+      $jointables = (isset($options['joins']) && is_array($options['joins']))? $options['joins'] : '';
       $custom_columns = (isset($options['custom_columns']) && is_array($options['custom_columns']))? $options['custom_columns'] : '';
       $custom_filter = (isset($options['custom_filter']) && $options['custom_filter'] != '')? $options['custom_filter'] : null;
       $tablenames = $this->get_aliased_tables($columns, $table, $jointables);
