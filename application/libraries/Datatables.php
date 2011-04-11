@@ -100,7 +100,7 @@
     */
     public function generate_from_advanced($table, $columns, $index, $options)
     {
-      $jointables = (isset($options['jointables']) && is_array($options['jointables']))? $options['jointables'] : $table;
+      $jointables = (isset($options['jointables']) && is_array($options['jointables']))? $options['jointables'] : '';
       $custom_columns = (isset($options['custom_columns']) && is_array($options['custom_columns']))? $options['custom_columns'] : '';
       $custom_filter = (isset($options['custom_filter']) && $options['custom_filter'] != '')? $options['custom_filter'] : null;
       $tablenames = $this->get_aliased_tables($columns, $table, $jointables);
@@ -295,9 +295,10 @@
       foreach($columns as $column)
         $tabledotcolumn[] = $table . '.' . $column;
 
-      foreach($jointables as $jointable_key => $jointable)
-        foreach($jointable['columns'] as $jcolumn_key => $jcolumn_val)
-          $tabledotcolumn[] = $jointable_key . '.' . $jcolumn_val;
+      if(is_array($jointables) && count($jointables) > 0)
+        foreach($jointables as $jointable_key => $jointable)
+          foreach($jointable['columns'] as $jcolumn_key => $jcolumn_val)
+            $tabledotcolumn[] = $jointable_key . '.' . $jcolumn_val;
 
       return $tabledotcolumn;
     }
