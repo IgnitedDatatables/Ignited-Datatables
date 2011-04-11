@@ -6,6 +6,7 @@ Ignited Datatables is a wrapper class/library based on the native Datatables ser
 found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter
 
 Fork   : https://github.com/IgnitedDatatables/Ignited-Datatables
+Wiki   : https://github.com/IgnitedDatatables/Ignited-Datatables/wiki
 Discuss: http://codeigniter.com/forums/viewthread/160896/
 Contact: Vincent Bambico <metal.conspiracy@gmail.com>
          Peter Trerotola <petroz@mac.com>
@@ -14,7 +15,7 @@ Contact: Vincent Bambico <metal.conspiracy@gmail.com>
 =======
 Install
 =======
-1. Installation steps go here.
+To install the library, copy the libraries/datatables.php file into your application/libraries folder.
 
 =======
 License
