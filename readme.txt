@@ -12,6 +12,13 @@ Contact: Vincent Bambico <metal.conspiracy@gmail.com>
          Peter Trerotola <petroz@mac.com>
          Yusuf Ozdemir <yusuf@ozdemir.be>
 
+============
+Requirements
+============
+jQuery 1.5+
+DataTables 1.7+
+CodeIgniter "Reactor"
+
 =======
 Install
 =======
