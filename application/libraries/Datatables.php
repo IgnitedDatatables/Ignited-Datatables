@@ -345,7 +345,7 @@
           else
             $aaData[$row_key][] = $col_val;
         }
-
+	   if(isset($custom_columns) && is_array($custom_columns))
 		foreach($custom_columns as $cus_col_key => $cus_col_val)
 		{
 			if (isset($cus_col_val[1]) && is_array($cus_col_val[1])){ 
@@ -354,6 +354,7 @@
 				$aaData[$row_key][] = $cus_col_val[0];
 			}else 	$aaData[$row_key][] =  $cus_col_val[0];
 		}
+	   }
       }
 
       foreach($columns as $col_key => $col_val)
