@@ -345,16 +345,22 @@
           else
             $aaData[$row_key][] = $col_val;
         }
-	   if(isset($custom_columns) && is_array($custom_columns))
-		foreach($custom_columns as $cus_col_key => $cus_col_val)
-		{
-			if (isset($cus_col_val[1]) && is_array($cus_col_val[1])){ 
-			foreach($cus_col_val[1] as $cus_colr_key => $cus_colr_val)
-				$cus_col_val[0] = str_ireplace("$".($cus_colr_key+1),$aaData[$row_key][array_search($cus_colr_val, $columns)], $cus_col_val[0]) ;				
-				$aaData[$row_key][] = $cus_col_val[0];
-			}else 	$aaData[$row_key][] =  $cus_col_val[0];
-		}
-	   }
+
+        if(isset($custom_columns) && is_array($custom_columns))
+        {
+          foreach($custom_columns as $cus_col_key => $cus_col_val)
+          {
+            if (isset($cus_col_val[1]) && is_array($cus_col_val[1]))
+            {
+              foreach($cus_col_val[1] as $cus_colr_key => $cus_colr_val)
+                $cus_col_val[0] = str_ireplace("$".($cus_colr_key+1),$aaData[$row_key][array_search($cus_colr_val, $columns)], $cus_col_val[0]);
+
+              $aaData[$row_key][] = $cus_col_val[0];
+            }
+            else
+              $aaData[$row_key][] =  $cus_col_val[0];
+          }
+        }
       }
 
       foreach($columns as $col_key => $col_val)
