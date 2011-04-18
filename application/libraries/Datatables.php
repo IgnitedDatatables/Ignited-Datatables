@@ -10,8 +10,8 @@
   * @category   library
   * @version    0.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
-  *             Peter Trerotola <petroz@mac.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
+  *             Peter Trerotola <petroz@mac.com>
   * @link       http://codeigniter.com/forums/viewthread/160896/
   */
   class Datatables
@@ -350,10 +350,10 @@
         {
           foreach($custom_columns as $cus_col_key => $cus_col_val)
           {
-            if (isset($cus_col_val[1]) && is_array($cus_col_val[1]))
+            if(isset($cus_col_val[1]) && is_array($cus_col_val[1]))
             {
               foreach($cus_col_val[1] as $cus_colr_key => $cus_colr_val)
-                $cus_col_val[0] = str_ireplace("$".($cus_colr_key+1),$aaData[$row_key][array_search($cus_colr_val, $columns)], $cus_col_val[0]);
+                $cus_col_val[0] = str_ireplace('$' . ($cus_colr_key + 1), $aaData[$row_key][array_search($cus_colr_val, $columns)], $cus_col_val[0]);
 
               $aaData[$row_key][] = $cus_col_val[0];
             }
