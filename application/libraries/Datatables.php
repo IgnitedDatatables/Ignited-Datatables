@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.2
+  * @version    0.3
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   *             Peter Trerotola <petroz@mac.com>
@@ -119,18 +119,6 @@
     }
 
     /**
-    * Builds all the necessary query segments and performs the main query based on passed query
-    *
-    * @todo add the necessary code and additional functions to make it work
-    * @param string $query
-    * @return string
-    */
-    public function generate_from_sql($query)
-    {
-      //add sql mode code here
-    }
-
-    /**
     * Creates a pagination query segment
     *
     * @return string
@@ -164,8 +152,8 @@
         $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
 
         for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-	   if ($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns))
-              $sOrder .= $sColArray[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
+          if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns))
+            $sOrder .= $sColArray[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
 
         $sOrder = substr_replace($sOrder, '', -2);
         if($sOrder == 'ORDER BY' || $sOrder == 'ORDER B') $sOrder = '';
@@ -203,8 +191,8 @@
         $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
 		
         for($i = 0; $i < count($sColArray); $i++)
-			if($this->ci->input->post('bSearchable_' . $i) == 'true')
-			if ($sColArray[$i] && in_array($sColArray[$i], $columns))
+          if($this->ci->input->post('bSearchable_' . $i) == 'true')
+            if($sColArray[$i] && in_array($sColArray[$i], $columns))
           		$sWhere .= $sColArray[$i] . " LIKE '%" . mysql_real_escape_string($this->ci->input->post('sSearch')) . "%' OR ";
 
         $sWhere = substr_replace($sWhere, '', -3);
