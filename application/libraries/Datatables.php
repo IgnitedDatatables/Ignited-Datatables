@@ -146,6 +146,8 @@
     */
     protected function get_ordering($columns)
     {
+      $sOrder = '';
+
       if($this->ci->input->post('iSortCol_0') != null)
       {
         $sOrder = 'ORDER BY ';
@@ -187,9 +189,8 @@
       {
         $sWhere .= (isset($jointables) && is_array($jointables))? ' AND ' : 'WHERE ';
         $sWhere .= '(';
-
         $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
-		
+
         for($i = 0; $i < count($sColArray); $i++)
           if($this->ci->input->post('bSearchable_' . $i) == 'true')
             if($sColArray[$i] && in_array($sColArray[$i], $columns))
