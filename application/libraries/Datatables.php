@@ -50,9 +50,6 @@
 
       switch($num)
       {
-        case 1:
-          $result = $this->__call('generate_from_sql', $args);
-          break;
         case 3:
           $result = $this->__call('generate_from_tci', $args);
           break;
