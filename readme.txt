@@ -10,7 +10,6 @@ Wiki   : https://github.com/IgnitedDatatables/Ignited-Datatables/wiki
 Discuss: http://codeigniter.com/forums/viewthread/160896/
 Contact: Vincent Bambico <metal.conspiracy@gmail.com>
          Yusuf Ozdemir <yusuf@ozdemir.be>
-         Peter Trerotola <petroz@mac.com>
 
 ============
 Requirements
