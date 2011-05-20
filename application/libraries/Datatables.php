@@ -55,7 +55,7 @@
     public function get($table, $columns, $index = NULL)
     {
       $this->table = $table;
-      $this->columns = $columns;
+      $this->columns = explode(',', str_replace(' ', '', $columns));
       $this->index = ($index == NULL)? $this->columns[0] : $index;
       return $this;
     }
@@ -68,7 +68,7 @@
     public function select($columns)
     {
       // todo : if columns is empty, return error..
-      $this->columns = $columns;
+      $this->columns = explode(',', str_replace(' ', '', $columns));
       return $this;
     }
 
