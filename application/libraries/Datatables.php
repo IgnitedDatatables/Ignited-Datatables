@@ -101,7 +101,7 @@
     */
     public function join($table, $columns, $fk)
     {
-      $this->joins[$table]['columns'] = $columns;
+      $this->joins[$table]['columns'] = explode(',', str_replace(' ', '', $columns));
       $this->joins[$table]['fk'] = $fk;
       return $this;
     }
@@ -113,7 +113,7 @@
     */
     public function add_column($column, $content, $match_replacement = NULL)
     {
-      $this->custom_columns[$column] = array($content, $match_replacement);
+      $this->custom_columns[$column] = array($content, explode(',', str_replace(' ', '', $match_replacement)));
       return $this;
     }
 
