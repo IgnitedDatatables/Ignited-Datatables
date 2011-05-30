@@ -227,7 +227,7 @@
 
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
-            $aaData[$row_key][array_search($modkey, $this->columns)] = $this->replacements($val, $aaData[$row_key]);
+            $aaData[$row_key][array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
       }
 
       $sColumns = $this->columns;
