@@ -182,12 +182,13 @@
     protected function get_filtering()
     {
       $sWhere = '';
+      $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
       $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->columns;
 
-      if($this->ci->input->post('sSearch') != '')
+      if($sSearch != '')
         for($i = 0; $i < count($sColArray); $i++)
           if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($sColArray[$i], $this->columns))
-            $sWhere .= $sColArray[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
+            $sWhere .= $sColArray[$i] . " LIKE '%" . $sSearch . "%' OR ";
 
       $sWhere = substr_replace($sWhere, '', -3);
 
@@ -200,7 +201,7 @@
     *
     * @return mixed
     */
-    public function get_display_result()
+    protected function get_display_result()
     {
       return $this->ci->db->get();
     }
