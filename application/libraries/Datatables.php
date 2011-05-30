@@ -116,7 +116,7 @@
     }
 
     /**
-    * Sets additional column variables for editing custom columns
+    * Sets additional column variables for editing columns
     *
     * @param string $column
     * @param string $content
@@ -206,6 +206,48 @@
     }
 
     /**
+    * Builds a JSON encoded string data
+    *
+    * @return string
+    */
+    protected function produce_output()
+    {
+      $aaData = array();
+      $rResult = $this->get_display_result();
+      $iTotal = $this->get_total_results();
+      $iFilteredTotal = $this->get_total_results(TRUE);
+
+      foreach($rResult->result() as $row_key => $row_val)
+      {
+        foreach($row_val as $field => $val)
+          $aaData[$row_key][] = $val;
+
+        foreach($this->add_columns as $add_val)
+          $aaData[$row_key][] = $this->exec_replace($add_val, $aaData[$row_key]);
+
+        foreach($this->edit_columns as $modkey => $modval)
+          foreach($modval as $val)
+            $aaData[$row_key][array_search($modkey, $this->columns)] = $this->replacements($val, $aaData[$row_key]);
+      }
+
+      $sColumns = $this->columns;
+
+      foreach($this->add_columns as $add_key => $add_val)
+        $sColumns[] = $add_key;
+
+      $sOutput = array
+      (
+        'sEcho'                => intval($this->ci->input->post('sEcho')),
+        'iTotalRecords'        => $iTotal,
+        'iTotalDisplayRecords' => $iFilteredTotal,
+        'aaData'               => $aaData,
+        'sColumns'             => implode(',', $sColumns)
+      );
+
+      return json_encode($sOutput);
+    }
+
+    /**
     * Get result count
     *
     * @return integer
@@ -231,7 +273,7 @@
     * @param mixed $row_data
     * @return string $custom_val['content']
     */
-    protected function replacements($custom_val, $row_data)
+    protected function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
 
@@ -260,48 +302,6 @@
       }
 
       return $custom_val['content'];
-    }
-
-    /**
-    * Builds a JSON encoded string data
-    *
-    * @return string
-    */
-    protected function produce_output()
-    {
-      $aaData = array();
-      $rResult = $this->get_display_result();
-      $iTotal = $this->get_total_results();
-      $iFilteredTotal = $this->get_total_results(TRUE);
-
-      foreach($rResult->result() as $row_key => $row_val)
-      {
-        foreach($row_val as $field => $val)
-          $aaData[$row_key][] = $val;
-
-        foreach($this->add_columns as $add_val)
-          $aaData[$row_key][] = $this->replacements($add_val, $aaData[$row_key]);
-
-        foreach($this->edit_columns as $modkey => $modval)
-          foreach($modval as $val)
-            $aaData[$row_key][array_search($modkey, $this->columns)] = $this->replacements($val, $aaData[$row_key]);
-      }
-
-      $sColumns = $this->columns;
-
-      foreach($this->add_columns as $add_key => $add_val)
-        $sColumns[] = $add_key;
-
-      $sOutput = array
-      (
-        'sEcho'                => intval($this->post('sEcho')),
-        'iTotalRecords'        => $iTotal,
-        'iTotalDisplayRecords' => $iFilteredTotal,
-        'aaData'               => $aaData,
-        'sColumns'             => implode(',', $sColumns)
-      );
-
-      return json_encode($sOutput);
     }
   }
 /* End of file Datatables.php */
