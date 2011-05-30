@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.4
+  * @version    0.5
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -18,26 +18,14 @@
     /**
     * Global container variables for chained argument results
     *
-    * @global object $ci
-    * @global string $table
-    * @global mixed $columns
-    * @global string $index
-    * @global mixed $joins
-    * @global string $join_table
-    * @global mixed $custom_columns
-    * @global string $filter
-    * @global string $aliased_tables
-    * @global mixed $referenced_columns
     */
     protected $ci;
     protected $table;
-    protected $columns;
-    protected $index;
-    protected $joins;
-    protected $custom_columns;
-    protected $filter;
-    protected $aliased_tables;
-    protected $referenced_columns;  
+    protected $joins = array();
+    protected $columns = array();
+    protected $where = array();
+    protected $add_columns = array();
+    protected $edit_columns = array();
 
     /**
     * Copies an instance of CI
@@ -48,83 +36,99 @@
     }
 
     /**
-    * Sets the table, columns, and default index column in which data will be fetched from
+    * Generates the SELECT portion of the query
     *
-    * @return string
+    * @param string $columns
+    * @param bool $backtick_protect
+    * @return object
     */
-    public function get($table, $columns, $index = NULL)
+    public function select($columns, $backtick_protect = TRUE)
     {
-      $this->table = $table;
-      $this->columns = explode(',', str_replace(' ', '', $columns));
-      $this->index = ($index == NULL)? $this->columns[0] : $index;
+      foreach(explode(',', $columns) as $key => $val)
+        $this->columns[] =  trim(preg_replace('/(\w*)\s+[aA][sS]\s+(\w*)/', '$2', $val));
+
+      $this->ci->db->select($columns, $backtick_protect);
       return $this;
     }
 
     /**
-    * Sets which columns to fetch from the specified table
+    * Generates the FROM portion of the query
     *
-    * @return string
-    */
-    public function select($columns)
-    {
-      // todo : if columns is empty, return error..
-      $this->columns = explode(',', str_replace(' ', '', $columns));
-      return $this;
-    }
-
-    /**
-    * Sets the primary table in which data will be fetched from
-    *
+    * @param string $table
     * @return string
     */
     public function from($table)
     {
       $this->table = $table;
+      $this->ci->db->from($table);
       return $this;
     }
 
     /**
-    * Sets the default index column to be used
+    * Generates the JOIN portion of the query
     *
-    * @return string
-    */
-    public function using($index = NULL)
-    {
-      $this->index = ($index == NULL)? $this->columns[0] : $index;
-      return $this;
-    }
-
-    /**
-    * Sets join statement variables
-    *
+    * @param string $table
+    * @param string $fk
+    * @param string $type
     * @return mixed
     */
-    public function join($table, $columns, $fk)
+    public function join($table, $fk, $type = NULL)
     {
-      $this->joins[$table]['columns'] = explode(',', str_replace(' ', '', $columns));
-      $this->joins[$table]['fk'] = $fk;
+      $this->joins[] = array($table, $fk , $type);
+      $this->ci->db->join($table, $fk, $type);
       return $this;
     }
 
     /**
-    * Sets additional column variables to facilitate custom columns
+    * Generates the WHERE portion of the query
     *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return string
+    */
+    public function where($key_condition, $val = NULL, $backtick_protect = TRUE)
+    {
+      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->ci->db->where($key_condition, $val, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Sets additional column variables for adding custom columns
+    *
+    * @param string $column
+    * @param string $content
+    * @param string $match_replacement
     * @return mixed
     */
     public function add_column($column, $content, $match_replacement = NULL)
     {
-      $this->custom_columns[$column] = array($content, explode(',', str_replace(' ', '', $match_replacement)));
+      if($match_replacement != NULL)
+      {
+        $match_replacement = preg_split('/(?<!\\\),+/', $match_replacement);
+        array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
+        array_walk($match_replacement, create_function('&$val', '$val = str_replace("\,", ",", $val);'));
+      }
+
+      $this->add_columns[$column] = array('content' => $content, 'replacement' => $match_replacement);
       return $this;
     }
 
     /**
-    * Sets filtering variable to facilitate custom filters
+    * Sets additional column variables for editing custom columns
     *
-    * @return string
+    * @param string $column
+    * @param string $content
+    * @param string $match_replacement
+    * @return mixed
     */
-    public function where($condition)
+    public function edit_column($column, $content, $match_replacement)
     {
-      $this->filter = $condition;
+      $match_replacement = preg_split('/(?<!\\\),+/', $match_replacement);
+      array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
+      array_walk($match_replacement, create_function('&$val', '$val = str_replace("\,", ",", $val);'));
+      $this->edit_columns[$column][] = array('content' => $content, 'replacement' => $match_replacement);
       return $this;
     }
 
@@ -135,251 +139,166 @@
     */
     public function generate()
     {
-      $this->aliased_tables = $this->get_aliased_tables();
-      $this->referenced_columns = $this->get_referenced_columns();
-      $sLimit = $this->get_paging();
-      $sOrder = $this->get_ordering();
-      $sWhere = $this->get_filtering();
-      $rResult = $this->get_display_data($sWhere, $sOrder, $sLimit);
-      $rResultFilterTotal = $this->get_data_set_length();
-      $aResultFilterTotal = $rResultFilterTotal->result_array();
-      $iFilteredTotal = $aResultFilterTotal[0]['FOUND_ROWS()'];
-      $rResultTotal = $this->get_total_data_set_length($sWhere);
-      $aResultTotal = $rResultTotal->result_array();
-      $iTotal = $aResultTotal[0]["COUNT($this->table.$this->index)"];
-      return $this->produce_output($iTotal, $iFilteredTotal, $rResult);
+      $this->get_paging();
+      $this->get_ordering();
+      $this->get_filtering();
+      return $this->produce_output();
     }
 
     /**
-    * Creates a pagination query segment
+    * Generates the LIMIT portion of the query
     *
-    * @return string
+    * @return mixed
     */
     protected function get_paging()
     {
-      $sLimit = '';
-
       if($this->ci->input->post('iDisplayStart') && $this->ci->input->post('iDisplayLength') != '-1')
-        $sLimit = 'LIMIT ' . $this->ci->input->post('iDisplayStart') . ', ' . $this->ci->input->post('iDisplayLength');
+        $this->ci->db->limit($this->ci->input->post('iDisplayLength'), $this->ci->input->post('iDisplayStart'));
+      elseif($this->ci->input->post('iDisplayLength') != '')
+        $this->ci->db->limit($this->ci->input->post('iDisplayLength'));
       else
-      {
-        $iDisplayLength = $this->ci->input->post('iDisplayLength');
-        $sLimit = (empty($iDisplayLength))? 'LIMIT 0,10' : 'LIMIT 0,' . $iDisplayLength;
-      }
-
-      return $sLimit;
+        $this->ci->db->limit(10);
     }
 
     /**
-    * Creates a sorting query segment
+    * Generates the ORDER BY portion of the query
     *
-    * @return string
+    * @return mixed
     */
     protected function get_ordering()
     {
-      $sOrder = '';
+      $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->columns;
 
-      if($this->ci->input->post('iSortCol_0') != NULL)
-      {
-        $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->referenced_columns;
-
-        for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-          if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->referenced_columns))
-            $sOrder .= $sColArray[intval($this->ci->input->post('iSortCol_' . $i))] . ' ' . $this->ci->input->post('sSortDir_' . $i) . ', ';
-
-        $sOrder = ($sOrder == '') ? '' : 'ORDER BY ' . $sOrder;
-        $sOrder = substr_replace($sOrder, '', -2);
-      }
-
-      return $sOrder;
+      for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
+        if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->columns ))
+          $this->ci->db->order_by($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
     }
-
+   
     /**
-    * Creates a filtering query segment
+    * Generates the LIKE portion of the query
     *
-    * @return string
+    * @return mixed
     */
     protected function get_filtering()
     {
       $sWhere = '';
-
-      if(isset($this->joins) && is_array($this->joins))
-      {
-        $sWhere = 'WHERE ';
-
-        foreach($this->joins as $jt_col_key => $jt_col_val)
-          $sWhere .= $jt_col_val['fk'] . ' AND ';
-
-        $sWhere = substr_replace($sWhere, '', -4);
-      }
+      $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->columns;
 
       if($this->ci->input->post('sSearch') != '')
-      {
-        $sWhere .= (isset($this->joins) && is_array($this->joins))? ' AND ' : 'WHERE ';
-        $sWhere .= '(';
-
-        $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->referenced_columns;
-
         for($i = 0; $i < count($sColArray); $i++)
-          if($this->ci->input->post('bSearchable_' . $i) == 'true')
-            if($sColArray[$i] && in_array($sColArray[$i], $this->referenced_columns))
-              $sWhere .= $sColArray[$i] . " LIKE '%" . mysql_real_escape_string($this->ci->input->post('sSearch')) . "%' OR ";
+          if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($sColArray[$i], $this->columns))
+            $sWhere .= $sColArray[$i] . " LIKE '%" . $this->ci->input->post('sSearch') . "%' OR ";
 
-        $sWhere = substr_replace($sWhere, '', -3);
-        $sWhere .= ')';
-      }
+      $sWhere = substr_replace($sWhere, '', -3);
 
-      for($i = 0; $i < count($this->referenced_columns); $i++)
+      if($sWhere != '')
+        $this->ci->db->where('(' . $sWhere .')');
+    }
+
+    /**
+    * Compiles the select statement based on the other functions called and runs the query
+    *
+    * @return mixed
+    */
+    public function get_display_result()
+    {
+      return $this->ci->db->get();
+    }
+
+    /**
+    * Get result count
+    *
+    * @return integer
+    */
+    protected function get_total_results($filtering = FALSE)
+    {
+      if($filtering)
+        $this->get_filtering();
+
+      foreach($this->joins as $val)
+        $this->ci->db->join($val[0], $val[1], $val[2]);
+
+      foreach($this->where as $val)
+        $this->ci->db->where($val[0], $val[1], $val[2]);
+
+      return $this->ci->db->count_all_results($this->table);
+    }
+
+    /**
+    * Runs callback functions and makes replacements
+    *
+    * @param mixed $custom_val
+    * @param mixed $row_data
+    * @return string $custom_val['content']
+    */
+    protected function replacements($custom_val, $row_data)
+    {
+      $replace_string = '';
+
+      if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
-        if($this->ci->input->post('bSearchable_' . $i) == 'true' && $this->ci->input->post('sSearch_' . $i) != '')
+        foreach($custom_val['replacement'] as $key => $val)
         {
-          $sWhere .= ($sWhere == '')? 'WHERE ' : ' AND ';
-          $sWhere .= $this->referenced_columns[$i] . " LIKE '%" . mysql_real_escape_string($this->ci->input->post('sSearch_' . $i)) . "%' ";
+          if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches))
+          {
+            $func = $matches[1];
+            $args = explode('|', $matches[2]);
+
+            foreach($args as $args_key => $args_val)
+              if(in_array($args_val, $this->columns))
+                $args[$args_key] = $row_data[array_search($args_val, $this->columns)];
+
+            $replace_string = call_user_func_array($func, $args);
+          }
+          elseif(in_array($val, $this->columns))
+            $replace_string = $row_data[array_search($val, $this->columns)];
+          else
+            $replace_string = $val;
+
+          $custom_val['content'] = str_ireplace('$' . ($key + 1), $replace_string, $custom_val['content']);
         }
       }
 
-      if(isset($this->filter) && $this->filter != NULL)
-      {
-        $sWhere .= ($sWhere == '')? 'WHERE ' : ' AND ';
-        $sWhere .= $this->filter;
-      }
-
-      return $sWhere;
-    }
-
-    /**
-    * Combines all created query segments to build the main query
-    *
-    * @param string $sWhere
-    * @param string $sOrder
-    * @param string $sLimit
-    * @return object
-    */
-    protected function get_display_data($sWhere, $sOrder, $sLimit)
-    {
-      return $this->ci->db->query
-      ("
-        SELECT SQL_CALC_FOUND_ROWS " . str_replace(' , ', ' ', implode(', ', $this->referenced_columns)) . "
-        FROM $this->aliased_tables
-        $sWhere
-        $sOrder 
-        $sLimit
-      ");
-    }
-
-    /**
-    * Gets all matched rows
-    *
-    * @return object
-    */
-    protected function get_data_set_length()
-    {
-      return $this->ci->db->query('SELECT FOUND_ROWS()');
-    }
-
-    /**
-    * Gets the count of all rows found
-    *
-    * @param string $sWhere
-    * @return string
-    */
-    protected function get_total_data_set_length($sWhere)
-    {
-      return $this->ci->db->query
-      ("
-        SELECT COUNT($this->table.$this->index)
-        FROM $this->aliased_tables
-        $sWhere
-      ");
-    }
-
-    /**
-    * Creates a query segment with table references for column names
-    *
-    * @return string
-    */
-    protected function get_referenced_columns()
-    {
-      foreach($this->columns as $column)
-        $tabledotcolumn[] = $this->table . '.' . $column;
-
-      if(is_array($this->joins) && count($this->joins) > 0)
-        foreach($this->joins as $jointable_key => $jointable)
-          foreach($jointable['columns'] as $jcolumn_key => $jcolumn_val)
-            $tabledotcolumn[] = $jointable_key . '.' . $jcolumn_val;
-
-      return $tabledotcolumn;
-    }
-
-    /**
-    * Creates a query segment with aliased table names
-    *
-    * @param mixed $jointables
-    * @return string
-    */
-    protected function get_aliased_tables()
-    {
-      $tables = $this->table;
-
-      if(is_array($this->joins) && count($this->joins) > 0)
-        foreach($this->joins as $jointable_key => $jointable)
-          $tables .= ', ' . $jointable_key;
-
-      return $tables;
+      return $custom_val['content'];
     }
 
     /**
     * Builds a JSON encoded string data
     *
-    * @param string $iTotal
-    * @param string $iFilteredTotal
-    * @param string $rResult
     * @return string
     */
-    protected function produce_output($iTotal, $iFilteredTotal, $rResult)
+    protected function produce_output()
     {
       $aaData = array();
-      $sColumnOrder = '';
+      $rResult = $this->get_display_result();
+      $iTotal = $this->get_total_results();
+      $iFilteredTotal = $this->get_total_results(TRUE);
 
-      foreach($rResult->result_array() as $row_key => $row_val)
+      foreach($rResult->result() as $row_key => $row_val)
       {
-        foreach($row_val as $col_key => $col_val)
-        {
-          if($row_val[$col_key] == 'version')
-            $aaData[$row_key][$col_key] = ($aaData[$row_key][$col_key] == 0)? '-' : $col_val;
-          else
-            $aaData[$row_key][] = $col_val;
-        }
+        foreach($row_val as $field => $val)
+          $aaData[$row_key][] = $val;
 
-        if(isset($this->custom_columns) && is_array($this->custom_columns))
-        {
-          foreach($this->custom_columns as $cus_col_key => $cus_col_val)
-          {
-            if(isset($cus_col_val[1]) && is_array($cus_col_val[1]))
-              foreach($cus_col_val[1] as $cus_colr_key => $cus_colr_val)
-                $cus_col_val[0] = str_ireplace('$' . ($cus_colr_key + 1), $aaData[$row_key][array_search($cus_colr_val, $this->referenced_columns)], $cus_col_val[0]);
+        foreach($this->add_columns as $add_val)
+          $aaData[$row_key][] = $this->replacements($add_val, $aaData[$row_key]);
 
-              $aaData[$row_key][] = $cus_col_val[0];
-          }
-        }
+        foreach($this->edit_columns as $modkey => $modval)
+          foreach($modval as $val)
+            $aaData[$row_key][array_search($modkey, $this->columns)] = $this->replacements($val, $aaData[$row_key]);
       }
 
-      foreach($this->referenced_columns as $col_key => $col_val)
-        $sColumnOrder .= $col_val . ',';
+      $sColumns = $this->columns;
 
-      if(isset($this->custom_columns) && is_array($this->custom_columns))
-        foreach($this->custom_columns as $cus_col_key => $cus_col_val)
-          $sColumnOrder .= $cus_col_key . ',';
-
-      $sColumnOrder = substr_replace($sColumnOrder, '', -1);
+      foreach($this->add_columns as $add_key => $add_val)
+        $sColumns[] = $add_key;
 
       $sOutput = array
       (
-        'sEcho'                => intval($this->ci->input->post('sEcho')),
+        'sEcho'                => intval($this->post('sEcho')),
         'iTotalRecords'        => $iTotal,
         'iTotalDisplayRecords' => $iFilteredTotal,
         'aaData'               => $aaData,
-        'sColumns'             => $sColumnOrder
+        'sColumns'             => implode(',', $sColumns)
       );
 
       return json_encode($sOutput);
