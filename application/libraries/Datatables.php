@@ -45,7 +45,7 @@
     public function select($columns, $backtick_protect = TRUE)
     {
       foreach(explode(',', $columns) as $key => $val)
-        $this->columns[] =  trim(preg_replace('/(\w*)\s+[aA][sS]\s+(\w*)/', '$2', $val));
+        $this->columns[] =  trim(preg_replace('/(\w*)\s+as\s+(\w*)/i', '$2', $val));
 
       $this->ci->db->select($columns, $backtick_protect);
       return $this;
