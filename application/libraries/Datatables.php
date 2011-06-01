@@ -152,12 +152,9 @@
     */
     protected function get_paging()
     {
-      if($this->ci->input->post('iDisplayStart') && $this->ci->input->post('iDisplayLength') != '-1')
-        $this->ci->db->limit($this->ci->input->post('iDisplayLength'), $this->ci->input->post('iDisplayStart'));
-      elseif($this->ci->input->post('iDisplayLength') != '')
-        $this->ci->db->limit($this->ci->input->post('iDisplayLength'));
-      else
-        $this->ci->db->limit(10);
+      $iStart = $this->ci->input->post('iDisplayStart');
+      $iLength =  $this->ci->input->post('iDisplayLength');
+      $this->ci->db->limit(($iLength != '' && $iLength != '-1') ? $iLength : 10, ($iStart) ? $iStart : 0 );
     }
 
     /**
