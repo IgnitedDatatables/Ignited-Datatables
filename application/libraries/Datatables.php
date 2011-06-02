@@ -274,12 +274,13 @@
     protected function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
+      $allowed_func = array("date", "trim", "str_replace", "substr", "strtoupper", "strtolower", "nl2br", "number_format", "preg_replace");
 
       if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
         foreach($custom_val['replacement'] as $key => $val)
         {
-          if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches))
+          if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches) && in_array($matches[1], $allowed_func))
           {
             $func = $matches[1];
             $args = explode('|', $matches[2]);
