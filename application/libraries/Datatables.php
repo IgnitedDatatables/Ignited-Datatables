@@ -274,7 +274,7 @@
     protected function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
-      $allowed_func = array('date', 'trim', 'str_replace', 'substr', 'strtoupper', 'strtolower', 'nl2br', 'number_format', 'preg_replace');
+      $allowed_func = array('date', 'trim', 'str_replace', 'substr', 'strtoupper', 'strtolower', 'nl2br', 'number_format', 'preg_replace', 'mdate', 'local_to_gmt', 'gmt_to_local', 'mysql_to_unix', 'unix_to_human', 'human_to_unix', 'timespan');
 
       if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
