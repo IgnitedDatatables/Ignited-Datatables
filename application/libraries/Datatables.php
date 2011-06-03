@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.5
+  * @version    0.5.1
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -153,8 +153,8 @@
     protected function get_paging()
     {
       $iStart = $this->ci->input->post('iDisplayStart');
-      $iLength =  $this->ci->input->post('iDisplayLength');
-      $this->ci->db->limit(($iLength != '' && $iLength != '-1') ? $iLength : 10, ($iStart) ? $iStart : 0 );
+      $iLength = $this->ci->input->post('iDisplayLength');
+      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 10, ($iStart)? $iStart : 0);
     }
 
     /**
@@ -170,7 +170,7 @@
         if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->columns ))
           $this->ci->db->order_by($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
     }
-   
+
     /**
     * Generates the LIKE portion of the query
     *
@@ -274,7 +274,7 @@
     protected function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
-      $allowed_func = array("date", "trim", "str_replace", "substr", "strtoupper", "strtolower", "nl2br", "number_format", "preg_replace");
+      $allowed_func = array('date', 'trim', 'str_replace', 'substr', 'strtoupper', 'strtolower', 'nl2br', 'number_format', 'preg_replace');
 
       if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
