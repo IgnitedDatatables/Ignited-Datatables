@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.5.1
+  * @version    0.5.2
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -21,11 +21,13 @@
     */
     protected $ci;
     protected $table;
+    protected $select = array();
     protected $joins = array();
     protected $columns = array();
     protected $where = array();
     protected $add_columns = array();
     protected $edit_columns = array();
+    protected $unset_columns = array();
 
     /**
     * Copies an instance of CI
@@ -44,9 +46,12 @@
     */
     public function select($columns, $backtick_protect = TRUE)
     {
-      foreach(explode(',', $columns) as $key => $val)
-        $this->columns[] =  trim(preg_replace('/(\w*)\s+as\s+(\w*)/i', '$2', $val));
-
+      foreach($this->explode(',', $columns) as $val)
+      {
+        $column = trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$2', $val)); 
+        $this->columns[] =  $column;
+        $this->select[$column] =  trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$1', $val));
+      }
       $this->ci->db->select($columns, $backtick_protect);
       return $this;
     }
@@ -104,13 +109,8 @@
     */
     public function add_column($column, $content, $match_replacement = NULL)
     {
-      if($match_replacement != NULL)
-      {
-        $match_replacement = preg_split('/(?<!\\\),+/', $match_replacement);
-        array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
-        array_walk($match_replacement, create_function('&$val', '$val = str_replace("\,", ",", $val);'));
-      }
-
+      $match_replacement = $this->explode(',', $match_replacement);
+      array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
       $this->add_columns[$column] = array('content' => $content, 'replacement' => $match_replacement);
       return $this;
     }
@@ -125,10 +125,21 @@
     */
     public function edit_column($column, $content, $match_replacement)
     {
-      $match_replacement = preg_split('/(?<!\\\),+/', $match_replacement);
+      $match_replacement = $this->explode(',', $match_replacement);
       array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
-      array_walk($match_replacement, create_function('&$val', '$val = str_replace("\,", ",", $val);'));
       $this->edit_columns[$column][] = array('content' => $content, 'replacement' => $match_replacement);
+      return $this;
+    }
+
+    /**
+    * Unset column
+    *
+    * @param string $column
+    * @return object
+    */
+    public function unset_column($column)
+    {
+      $this->unset_columns[] = $column;
       return $this;
     }
 
@@ -165,9 +176,9 @@
     protected function get_ordering()
     {
       $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->columns;
-
+      $columns = array_values(array_diff($this->columns, $this->unset_columns));
       for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-        if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->columns ))
+        if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns ))
           $this->ci->db->order_by($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
     }
 
@@ -180,12 +191,13 @@
     {
       $sWhere = '';
       $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
-      $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->columns;
+      $columns = array_values(array_diff($this->columns, $this->unset_columns));
+      $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
 
       if($sSearch != '')
         for($i = 0; $i < count($sColArray); $i++)
-          if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($sColArray[$i], $this->columns))
-            $sWhere .= $sColArray[$i] . " LIKE '%" . $sSearch . "%' OR ";
+          if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($sColArray[$i], $columns))
+            $sWhere .= $this->select[$sColArray[$i]] . " LIKE '%" . $sSearch . "%' OR ";
 
       $sWhere = substr_replace($sWhere, '', -3);
 
@@ -226,10 +238,17 @@
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
             $aaData[$row_key][array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
+
+        foreach($this->unset_columns as $column)
+          if (in_array($column, $this->columns))
+            unset($aaData[$row_key][array_search($column, $this->columns)]);
+        $aaData[$row_key] = array_values($aaData[$row_key]);
       }
 
       $sColumns = $this->columns;
-
+      foreach($this->unset_columns as $column)
+        if(in_array($column, $this->columns))
+          unset($sColumns[array_search($column, $this->columns)]);
       foreach($this->add_columns as $add_key => $add_val)
         $sColumns[] = $add_key;
 
@@ -274,16 +293,17 @@
     protected function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
-      $allowed_func = array('date', 'trim', 'str_replace', 'substr', 'strtoupper', 'strtolower', 'nl2br', 'number_format', 'preg_replace', 'mdate', 'local_to_gmt', 'gmt_to_local', 'mysql_to_unix', 'unix_to_human', 'human_to_unix', 'timespan');
 
       if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
         foreach($custom_val['replacement'] as $key => $val)
         {
-          if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches) && in_array($matches[1], $allowed_func))
+          if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches))
           {
             $func = $matches[1];
-            $args = explode('|', $matches[2]);
+            $args = preg_split('/(?<!\\\),+/', $matches[2]);
+            array_walk($args, create_function('&$val', '$val = trim($val);'));
+            array_walk($args, create_function('&$val', '$val = str_replace("\,", ",", $val);'));
 
             foreach($args as $args_key => $args_val)
               if(in_array($args_val, $this->columns))
@@ -302,6 +322,51 @@
 
       return $custom_val['content'];
     }
+
+    /**
+    * Return the difference of open and close characters
+    *
+    * @param string $str
+    * @param string $open
+    * @param string $close
+    * @return string $retval
+    */
+    protected function balanceChars($str, $open, $close) {
+        $openCount = substr_count($str, $open);
+        $closeCount = substr_count($str, $close);
+        $retval = $openCount - $closeCount;
+        return $retval;
+    }
+
+    /**
+    * Explode, but ignore delimiter until closing characters are found
+    *
+    * @param string $delimiter
+    * @param string $str
+    * @param string $open
+    * @param string $close
+    * @return mixed $retval
+    */
+    protected function explode($delimiter, $str, $open='(', $close=')') {
+        $retval = array();
+        $hold = array();
+        $balance = 0;
+        $parts = explode($delimiter, $str);
+        foreach ($parts as $part) {
+            $hold[] = $part;
+            $balance += $this->balanceChars($part, $open, $close);
+            if ($balance < 1) {
+                $retval[] = implode($delimiter, $hold);
+                $hold = array();
+                $balance = 0;
+           }
+        }
+        if (count($hold) > 0) {
+            $retval[] = implode($delimiter, $hold);
+        }
+        return $retval;
+    }
+
   }
 /* End of file Datatables.php */
 /* Location: ./application/libraries/Datatables.php */
