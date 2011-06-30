@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.5.2
+  * @version    0.5.3
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -42,7 +42,7 @@
     *
     * @param string $columns
     * @param bool $backtick_protect
-    * @return object
+    * @return mixed
     */
     public function select($columns, $backtick_protect = TRUE)
     {
@@ -60,7 +60,7 @@
     * Generates the FROM portion of the query
     *
     * @param string $table
-    * @return string
+    * @return mixed
     */
     public function from($table)
     {
@@ -79,7 +79,7 @@
     */
     public function join($table, $fk, $type = NULL)
     {
-      $this->joins[] = array($table, $fk , $type);
+      $this->joins[] = array($table, $fk, $type);
       $this->ci->db->join($table, $fk, $type);
       return $this;
     }
@@ -90,7 +90,7 @@
     * @param mixed $key_condition
     * @param string $val
     * @param bool $backtick_protect
-    * @return string
+    * @return mixed
     */
     public function where($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
@@ -135,7 +135,7 @@
     * Unset column
     *
     * @param string $column
-    * @return object
+    * @return mixed
     */
     public function unset_column($column)
     {
@@ -175,10 +175,16 @@
     */
     protected function get_ordering()
     {
-      $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $this->columns;
+      if ($this->check_mDataprop())
+        $sColArray = $this->get_mDataprop();
+      elseif ($this->ci->input->post('sColumns'))
+        $sColArray = explode(',', $this->ci->input->post('sColumns'));
+      else
+        $sColArray = $this->columns;
+
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
       for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-        if($sColArray[intval($this->ci->input->post('iSortCol_' . $i))] && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns ))
+        if(isset($sColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
           $this->ci->db->order_by($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
     }
 
@@ -189,10 +195,16 @@
     */
     protected function get_filtering()
     {
+      if ($this->check_mDataprop())
+        $sColArray = $this->get_mDataprop();
+      elseif ($this->ci->input->post('sColumns'))
+        $sColArray = explode(',', $this->ci->input->post('sColumns'));
+      else
+        $sColArray = $this->columns;
+
       $sWhere = '';
       $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
-      $sColArray = ($this->ci->input->post('sColumns'))? explode(',', $this->ci->input->post('sColumns')) : $columns;
 
       if($sSearch != '')
         for($i = 0; $i < count($sColArray); $i++)
@@ -202,7 +214,7 @@
       $sWhere = substr_replace($sWhere, '', -3);
 
       if($sWhere != '')
-        $this->ci->db->where('(' . $sWhere .')');
+        $this->ci->db->where('(' . $sWhere . ')');
     }
 
     /**
@@ -230,19 +242,27 @@
       foreach($rResult->result() as $row_key => $row_val)
       {
         foreach($row_val as $field => $val)
-          $aaData[$row_key][] = $val;
+          if($this->check_mDataprop())
+            $aaData[$row_key][$field] = $val;
+          else
+            $aaData[$row_key][] = $val;
 
-        foreach($this->add_columns as $add_val)
-          $aaData[$row_key][] = $this->exec_replace($add_val, $aaData[$row_key]);
+        foreach($this->add_columns as $field => $val)
+          if($this->check_mDataprop())
+            $aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
+          else
+            $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
 
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
-            $aaData[$row_key][array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
+            $aaData[$row_key][($this->check_mDataprop())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
 
         foreach($this->unset_columns as $column)
-          if (in_array($column, $this->columns))
-            unset($aaData[$row_key][array_search($column, $this->columns)]);
-        $aaData[$row_key] = array_values($aaData[$row_key]);
+          if(in_array($column, $this->columns))
+            unset($aaData[$row_key][($this->check_mDataprop())? $column : array_search($column, $this->columns)]);
+
+        if(!$this->check_mDataprop())
+          $aaData[$row_key] = array_values($aaData[$row_key]);
       }
 
       $sColumns = $this->columns;
@@ -307,12 +327,12 @@
 
             foreach($args as $args_key => $args_val)
               if(in_array($args_val, $this->columns))
-                $args[$args_key] = $row_data[array_search($args_val, $this->columns)];
+                $args[$args_key] = $row_data[($this->check_mDataprop())? $args_val : array_search($args_val, $this->columns)];
 
             $replace_string = call_user_func_array($func, $args);
           }
           elseif(in_array($val, $this->columns))
-            $replace_string = $row_data[array_search($val, $this->columns)];
+            $replace_string = $row_data[($this->check_mDataprop())? $val : array_search($val, $this->columns)];
           else
             $replace_string = $val;
 
@@ -324,6 +344,37 @@
     }
 
     /**
+    * Check mDataprop
+    *
+    * @return bool
+    */
+    protected function check_mDataprop()
+    {
+      if (!$this->ci->input->post('mDataProp_0')) return FALSE;
+
+      for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
+        if(!is_numeric($this->ci->input->post('mDataProp_' . $i)))
+          return TRUE;
+
+      return FALSE;
+    }
+
+    /**
+    * Get mDataprop order
+    *
+    * @return mixed
+    */
+    protected function get_mDataprop()
+    {
+      $mDataProp = array();
+
+      for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
+        $mDataProp[] = $this->ci->input->post('mDataProp_' . $i);
+
+      return $mDataProp;
+    }
+
+    /**
     * Return the difference of open and close characters
     *
     * @param string $str
@@ -331,11 +382,12 @@
     * @param string $close
     * @return string $retval
     */
-    protected function balanceChars($str, $open, $close) {
-        $openCount = substr_count($str, $open);
-        $closeCount = substr_count($str, $close);
-        $retval = $openCount - $closeCount;
-        return $retval;
+    protected function balanceChars($str, $open, $close)
+    {
+      $openCount = substr_count($str, $open);
+      $closeCount = substr_count($str, $close);
+      $retval = $openCount - $closeCount;
+      return $retval;
     }
 
     /**
@@ -347,26 +399,30 @@
     * @param string $close
     * @return mixed $retval
     */
-    protected function explode($delimiter, $str, $open='(', $close=')') {
-        $retval = array();
-        $hold = array();
-        $balance = 0;
-        $parts = explode($delimiter, $str);
-        foreach ($parts as $part) {
-            $hold[] = $part;
-            $balance += $this->balanceChars($part, $open, $close);
-            if ($balance < 1) {
-                $retval[] = implode($delimiter, $hold);
-                $hold = array();
-                $balance = 0;
-           }
-        }
-        if (count($hold) > 0) {
-            $retval[] = implode($delimiter, $hold);
-        }
-        return $retval;
-    }
+    protected function explode($delimiter, $str, $open='(', $close=')') 
+    {
+      $retval = array();
+      $hold = array();
+      $balance = 0;
+      $parts = explode($delimiter, $str);
 
+      foreach ($parts as $part) 
+      {
+        $hold[] = $part;
+        $balance += $this->balanceChars($part, $open, $close);
+        if ($balance < 1)
+        {
+          $retval[] = implode($delimiter, $hold);
+          $hold = array();
+          $balance = 0;
+        }
+      }
+
+      if (count($hold) > 0)
+        $retval[] = implode($delimiter, $hold);
+
+      return $retval;
+    }
   }
 /* End of file Datatables.php */
 /* Location: ./application/libraries/Datatables.php */
