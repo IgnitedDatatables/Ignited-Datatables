@@ -239,13 +239,9 @@
       $iTotal = $this->get_total_results();
       $iFilteredTotal = $this->get_total_results(TRUE);
 
-      foreach($rResult->result() as $row_key => $row_val)
+      foreach($rResult->result_array() as $row_key => $row_val)
       {
-        foreach($row_val as $field => $val)
-          if($this->check_mDataprop())
-            $aaData[$row_key][$field] = $val;
-          else
-            $aaData[$row_key][] = $val;
+        $aaData[$row_key] = ($this->check_mDataprop())? $row_val : array_values($row_val);
 
         foreach($this->add_columns as $field => $val)
           if($this->check_mDataprop())
@@ -269,8 +265,7 @@
       foreach($this->unset_columns as $column)
         if(in_array($column, $this->columns))
           unset($sColumns[array_search($column, $this->columns)]);
-      foreach($this->add_columns as $add_key => $add_val)
-        $sColumns[] = $add_key;
+      $sColumns = array_merge_recursive($sColumns, array_keys($this->add_columns));
 
       $sOutput = array
       (
