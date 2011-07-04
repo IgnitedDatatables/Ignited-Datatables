@@ -110,7 +110,6 @@
     public function add_column($column, $content, $match_replacement = NULL)
     {
       $match_replacement = $this->explode(',', $match_replacement);
-      array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
       $this->add_columns[$column] = array('content' => $content, 'replacement' => $match_replacement);
       return $this;
     }
@@ -126,7 +125,6 @@
     public function edit_column($column, $content, $match_replacement)
     {
       $match_replacement = $this->explode(',', $match_replacement);
-      array_walk($match_replacement, create_function('&$val', '$val = trim($val);'));
       $this->edit_columns[$column][] = array('content' => $content, 'replacement' => $match_replacement);
       return $this;
     }
@@ -176,18 +174,18 @@
     protected function get_ordering()
     {
       if ($this->check_mDataprop())
-        $sColArray = $this->get_mDataprop();
+        $mColArray = $this->get_mDataprop();
       elseif ($this->ci->input->post('sColumns'))
-        $sColArray = explode(',', $this->ci->input->post('sColumns'));
+        $mColArray = explode(',', $this->ci->input->post('sColumns'));
       else
-        $sColArray = $this->columns;
+        $mColArray = $this->columns;
 
-      $sColArray = array_values(array_diff($sColArray, $this->unset_columns));
+      $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
       for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-        if(isset($sColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
-          $this->ci->db->order_by($sColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
+        if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
+          $this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
     }
 
     /**
@@ -198,20 +196,20 @@
     protected function get_filtering()
     {
       if ($this->check_mDataprop())
-        $sColArray = $this->get_mDataprop();
+        $mColArray = $this->get_mDataprop();
       elseif ($this->ci->input->post('sColumns'))
-        $sColArray = explode(',', $this->ci->input->post('sColumns'));
+        $mColArray = explode(',', $this->ci->input->post('sColumns'));
       else
-        $sColArray = $this->columns;
+        $mColArray = $this->columns;
 
       $sWhere = '';
       $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
       if($sSearch != '')
-        for($i = 0; $i < count($sColArray); $i++)
-          if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($sColArray[$i], $columns))
-            $sWhere .= $this->select[$sColArray[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+        for($i = 0; $i < count($mColArray); $i++)
+          if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($mColArray[$i], $columns))
+            $sWhere .= $this->select[$mColArray[$i]] . " LIKE '%" . $sSearch . "%' OR ";
 
       $sWhere = substr_replace($sWhere, '', -3);
 
@@ -261,7 +259,6 @@
           $aaData[$row_key] = array_values($aaData[$row_key]);
       }
 
-      $sColumns = $this->columns;
       $sColumns = array_diff($this->columns, $this->unset_columns);
       $sColumns = array_merge_recursive($sColumns, array_keys($this->add_columns));
 
@@ -311,16 +308,17 @@
       {
         foreach($custom_val['replacement'] as $key => $val)
         {
+          $val = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
           if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches))
           {
             $func = $matches[1];
-            $args = preg_split('/(?<!\\\),+/', $matches[2]);
-            array_walk($args, create_function('&$val', '$val = trim($val);'));
-            array_walk($args, create_function('&$val', '$val = str_replace("\,", ",", $val);'));
+            $args = $this->explode(',', $matches[2]);
 
             foreach($args as $args_key => $args_val)
-              if(in_array($args_val, $this->columns))
-                $args[$args_key] = $row_data[($this->check_mDataprop())? $args_val : array_search($args_val, $this->columns)];
+            {
+              $args_val = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($args_val));
+              $args[$args_key] = (in_array($args_val, $this->columns))? ($row_data[($this->check_mDataprop())? $args_val : array_search($args_val, $this->columns)]) : $args_val;
+            }
 
             $replace_string = call_user_func_array($func, $args);
           }
