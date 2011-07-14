@@ -21,13 +21,14 @@
     */
     protected $ci;
     protected $table;
-    protected $select = array();
-    protected $joins = array();
-    protected $columns = array();
-    protected $where = array();
-    protected $add_columns = array();
-    protected $edit_columns = array();
-    protected $unset_columns = array();
+    protected $select         = array();
+    protected $joins          = array();
+    protected $columns        = array();
+    protected $where          = array();
+    protected $filter         = array();
+    protected $add_columns    = array();
+    protected $edit_columns   = array();
+    protected $unset_columns  = array();
 
     /**
     * Copies an instance of CI
@@ -96,6 +97,20 @@
     {
       $this->where[] = array($key_condition, $val, $backtick_protect);
       $this->ci->db->where($key_condition, $val, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Generates the WHERE portion of the query
+    *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return mixed
+    */
+    public function filter($key_condition, $val = NULL, $backtick_protect = TRUE)
+    {
+      $this->filter[] = array($key_condition, $val, $backtick_protect);
       return $this;
     }
 
@@ -202,6 +217,8 @@
 
       $sWhere = '';
       $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
+
+      $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
       if($sSearch != '')
@@ -213,6 +230,13 @@
 
       if($sWhere != '')
         $this->ci->db->where('(' . $sWhere . ')');
+
+      for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
+        if($this->ci->input->post('sSearch_' . $i) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
+          $this->ar->where($this->select[$mColArray[$i]].' like', '%'.$this->ci->input->post('sSearch_' . $i).'%');
+
+      foreach($this->filter as $val)
+        $this->ar->where($val[0], $val[1], $val[2]);
     }
 
     /**
