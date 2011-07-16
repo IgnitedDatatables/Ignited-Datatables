@@ -233,10 +233,10 @@
 
       for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
         if($this->ci->input->post('sSearch_' . $i) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
-          $this->ar->where($this->select[$mColArray[$i]].' like', '%'.$this->ci->input->post('sSearch_' . $i).'%');
+          $this->ci->db->where($this->select[$mColArray[$i]].' LIKE', '%'.$this->ci->input->post('sSearch_' . $i).'%');
 
       foreach($this->filter as $val)
-        $this->ar->where($val[0], $val[1], $val[2]);
+        $this->ci->db->where($val[0], $val[1], $val[2]);
     }
 
     /**
