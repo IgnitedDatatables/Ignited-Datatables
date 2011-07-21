@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.5.3
+  * @version    0.5.4
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -331,10 +331,10 @@
         foreach($custom_val['replacement'] as $key => $val)
         {
           $sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
-          if(preg_match('/callback\_(\w+)\((.+)\)/i', $val, $matches))
+          if(preg_match('/(\w+)\((.*)\)/i', $val, $matches) && function_exists($matches[1]))
           {
             $func = $matches[1];
-            $args = $this->explode(',', $matches[2]);
+            $args = preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
             foreach($args as $args_key => $args_val)
             {
