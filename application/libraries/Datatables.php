@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.5.4
+  * @version    0.6
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -157,15 +157,14 @@
     /**
     * Builds all the necessary query segments and performs the main query based on results set from chained statements
     *
-    * @param string charset
     * @return string
     */
-    public function generate($charset = 'UTF-8')
+    public function generate()
     {
       $this->get_paging();
       $this->get_ordering();
       $this->get_filtering();
-      return $this->produce_output($charset);
+      return $this->produce_output();
     }
 
     /**
@@ -253,10 +252,9 @@
     /**
     * Builds a JSON encoded string data
     *
-    * @param string charset
     * @return string
     */
-    protected function produce_output($charset)
+    protected function produce_output()
     {
       $aaData = array();
       $rResult = $this->get_display_result();
@@ -295,10 +293,7 @@
         'sColumns'             => implode(',', $sColumns)
       );
 
-      if(strtolower($charset) == 'utf-8')
-        return json_encode($sOutput);
-      else
-        return $this->jsonify($sOutput);
+      return $this->jsonify($sOutput);
     }
 
     /**
@@ -483,12 +478,16 @@
 
       if($isList)
       {
-        foreach($result as $value) $json[] = $this->jsonify($value);
+        foreach($result as $value)
+          $json[] = $this->jsonify($value);
+
         return '[' . join(',', $json) . ']';
       }
       else
       {
-        foreach($result as $key => $value) $json[] = $this->jsonify($key) . ':' . $this->jsonify($value);
+        foreach($result as $key => $value)
+          $json[] = $this->jsonify($key) . ':' . $this->jsonify($value);
+
         return '{' . join(',', $json) . '}';
       }
     }
