@@ -157,14 +157,15 @@
     /**
     * Builds all the necessary query segments and performs the main query based on results set from chained statements
     *
+    * @param string charset
     * @return string
     */
-    public function generate()
+    public function generate($charset = 'UTF-8')
     {
       $this->get_paging();
       $this->get_ordering();
       $this->get_filtering();
-      return $this->produce_output();
+      return $this->produce_output($charset);
     }
 
     /**
@@ -263,9 +264,10 @@
     /**
     * Builds a JSON encoded string data
     *
+    * @param string charset
     * @return string
     */
-    protected function produce_output()
+    protected function produce_output($charset)
     {
       $aaData = array();
       $rResult = $this->get_display_result();
@@ -304,7 +306,10 @@
         'sColumns'             => implode(',', $sColumns)
       );
 
-      return $this->jsonify($sOutput);
+      if(strtolower($charset) == 'utf-8')
+        return json_encode($sOutput);
+      else
+        return $this->jsonify($sOutput);
     }
 
     /**
