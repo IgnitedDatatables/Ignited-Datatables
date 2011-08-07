@@ -278,12 +278,18 @@
       {
         $aaData[$row_key] = ($this->check_mDataprop())? $row_val : array_values($row_val);
 
-        foreach($this->add_columns as $field => $val)
-          if($this->check_mDataprop())
-            $aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
-          else
-            $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
-
+      foreach ($this->add_columns as $field => $val) {
+			if ($this->check_mDataprop()) 
+				$aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
+			else {
+				foreach ($val['replacement'] as $tmp_key => $tmp_val) 
+					if (array_key_exists($tmp_key, $row_val)) {
+						$val['replacement'][$tmp_key] = $row_val[$tmp_key];
+						$this->add_columns[$field]['replacement'][$tmp_key] = $val['replacement'][$tmp_key];
+					}
+				$aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
+			}
+		}
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
             $aaData[$row_key][($this->check_mDataprop())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
