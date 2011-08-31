@@ -234,7 +234,7 @@
 
       for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
       {
-        if($this->ci->input->post('sSearch_' . $i) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
+        if(isset($_POST['sSearch_' . $i]) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
         {
           $miSearch = explode(',', $this->ci->input->post('sSearch_' . $i));
           foreach($miSearch as $val)
