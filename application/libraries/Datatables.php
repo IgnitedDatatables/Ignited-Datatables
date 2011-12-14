@@ -38,6 +38,11 @@
       $this->ci =& get_instance();
     }
 
+    public function set_database($db_name){ 
+    $db_data = $this->ci->load->database('buzz', TRUE);
+	  $this->ci->db = $db_data;
+	}
+
     /**
     * Generates the SELECT portion of the query
     *
