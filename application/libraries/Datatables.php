@@ -39,7 +39,7 @@
     }
 
     public function set_database($db_name){ 
-    $db_data = $this->ci->load->database('buzz', TRUE);
+    $db_data = $this->ci->load->database($db_name, TRUE);
 	  $this->ci->db = $db_data;
 	}
 
