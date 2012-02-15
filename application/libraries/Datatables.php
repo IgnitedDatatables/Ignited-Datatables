@@ -25,6 +25,8 @@
     protected $joins          = array();
     protected $columns        = array();
     protected $where          = array();
+    protected $distinct;
+    protected $group_by;
     protected $filter         = array();
     protected $add_columns    = array();
     protected $edit_columns   = array();
@@ -61,6 +63,34 @@
       $this->ci->db->select($columns, $backtick_protect);
       return $this;
     }
+
+    /**
+    * Generates the DISTINCT portion of the query
+    *
+    * @param string $column
+    * @return mixed
+    */
+    public function distinct($column)
+    {
+      $this->distinct = $column;
+      $this->ci->db->distinct($column);
+      return $this;
+    }
+
+    /**
+    * Generates the GROUP_BY portion of the query
+    *
+    * @param string $column
+    * @return mixed
+    */
+    public function group_by($column)
+    {
+      $this->group_by = $column;
+			$this->ci->db->group_by($column);
+      return $this;
+    }
+
+
 
     /**
     * Generates the FROM portion of the query
