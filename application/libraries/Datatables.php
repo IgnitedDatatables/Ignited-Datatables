@@ -230,7 +230,6 @@
     */
     public function generate($charset = 'UTF-8')
     {
-	  //print_array($this);
       $this->get_paging();
       $this->get_ordering();
       $this->get_filtering();
@@ -244,7 +243,6 @@
     */
     protected function get_paging()
     {
-	  //echo '<p>Get Paging: '.$this->ci->input->post('iDisplayLength').'</p>';	
       $iStart = $this->ci->input->post('iDisplayStart');
       $iLength = $this->ci->input->post('iDisplayLength');
       $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 100, ($iStart)? $iStart : 0);
@@ -267,19 +265,10 @@
       $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
  
-      //echo intval($this->ci->input->post('iSortingCols'));
- 
       for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++):
-	    
-//		echo "\n\n i ";
-//	    echo "\n column = ".$mColArray[intval($this->ci->input->post('iSortCol_' . $i))];
-	    //echo "\n bSortable_".$i." = ".$this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i)));
-//		echo "\n sSortDir_".$i." = ".$this->ci->input->post('sSortDir_' . $i);
-//		echo "\n\n";
-		
-		if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
-    	$this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
-	  endfor;
+				if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
+				$this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
+			endfor;
 	  
 	}
 
