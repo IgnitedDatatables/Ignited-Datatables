@@ -21,12 +21,12 @@
     */
     protected $ci;
     protected $table;
+    protected $distinct;
+    protected $group_by;
     protected $select         = array();
     protected $joins          = array();
     protected $columns        = array();
     protected $where          = array();
-    protected $distinct;
-    protected $group_by;
     protected $filter         = array();
     protected $add_columns    = array();
     protected $edit_columns   = array();
@@ -40,10 +40,14 @@
       $this->ci =& get_instance();
     }
 
+    /**
+    * If you establish multiple databases in config/database.php this will allow you to 
+		* set the database (other than $active_group) - more info: http://codeigniter.com/forums/viewthread/145901/#712942
+    */
     public function set_database($db_name){ 
-    $db_data = $this->ci->load->database($db_name, TRUE);
-	  $this->ci->db = $db_data;
-	}
+			$db_data = $this->ci->load->database($db_name, TRUE);
+			$this->ci->db = $db_data;
+		}
 
     /**
     * Generates the SELECT portion of the query
@@ -91,7 +95,6 @@
     }
 
 
-
     /**
     * Generates the FROM portion of the query
     *
@@ -132,6 +135,36 @@
     {
       $this->where[] = array($key_condition, $val, $backtick_protect);
       $this->ci->db->where($key_condition, $val, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Generates the WHERE portion of the query
+    *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return mixed
+    */
+    public function or_where($key_condition, $val = NULL, $backtick_protect = TRUE)
+    {
+      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->ci->db->or_where($key_condition, $val, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Generates the WHERE portion of the query
+    *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return mixed
+    */
+    public function like($key_condition, $val = NULL, $backtick_protect = TRUE)
+    {
+      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->ci->db->like($key_condition, $val, $backtick_protect);
       return $this;
     }
 
@@ -197,6 +230,7 @@
     */
     public function generate($charset = 'UTF-8')
     {
+	  //print_array($this);
       $this->get_paging();
       $this->get_ordering();
       $this->get_filtering();
@@ -210,9 +244,10 @@
     */
     protected function get_paging()
     {
+	  //echo '<p>Get Paging: '.$this->ci->input->post('iDisplayLength').'</p>';	
       $iStart = $this->ci->input->post('iDisplayStart');
       $iLength = $this->ci->input->post('iDisplayLength');
-      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 10, ($iStart)? $iStart : 0);
+      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 100, ($iStart)? $iStart : 0);
     }
 
     /**
@@ -231,11 +266,22 @@
 
       $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
-
-      for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-        if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
-          $this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
-    }
+ 
+      //echo intval($this->ci->input->post('iSortingCols'));
+ 
+      for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++):
+	    
+//		echo "\n\n i ";
+//	    echo "\n column = ".$mColArray[intval($this->ci->input->post('iSortCol_' . $i))];
+	    //echo "\n bSortable_".$i." = ".$this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i)));
+//		echo "\n sSortDir_".$i." = ".$this->ci->input->post('sSortDir_' . $i);
+//		echo "\n\n";
+		
+		if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
+    	$this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
+	  endfor;
+	  
+	}
 
     /**
     * Generates the LIKE portion of the query
@@ -252,7 +298,7 @@
         $mColArray = $this->columns;
 
       $sWhere = '';
-      $sSearch = $this->ci->db->escape_str($this->ci->input->post('sSearch'));
+      $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
 
       $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
@@ -293,7 +339,9 @@
     */
     protected function get_display_result()
     {
-      return $this->ci->db->get();
+      $data = $this->ci->db->get();
+	  	//print_array($this->ci->db->last_query());
+	  	return $data;
     }
 
     /**
@@ -543,5 +591,6 @@
       }
     }
   }
+  
 /* End of file Datatables.php */
 /* Location: ./application/libraries/Datatables.php */
