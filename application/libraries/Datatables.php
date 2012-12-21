@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.6
+  * @version    0.7
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://codeigniter.com/forums/viewthread/160896/
@@ -21,6 +21,8 @@
     */
     protected $ci;
     protected $table;
+    protected $distinct;
+    protected $group_by;
     protected $select         = array();
     protected $joins          = array();
     protected $columns        = array();
@@ -39,6 +41,16 @@
     }
 
     /**
+    * If you establish multiple databases in config/database.php this will allow you to
+    * set the database (other than $active_group) - more info: http://codeigniter.com/forums/viewthread/145901/#712942
+    */
+    public function set_database($db_name)
+    {
+      $db_data = $this->ci->load->database($db_name, TRUE);
+      $this->ci->db = $db_data;
+    }
+
+    /**
     * Generates the SELECT portion of the query
     *
     * @param string $columns
@@ -49,11 +61,38 @@
     {
       foreach($this->explode(',', $columns) as $val)
       {
-        $column = trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$2', $val)); 
+        $column = trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$2', $val));
         $this->columns[] =  $column;
         $this->select[$column] =  trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$1', $val));
       }
+
       $this->ci->db->select($columns, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Generates the DISTINCT portion of the query
+    *
+    * @param string $column
+    * @return mixed
+    */
+    public function distinct($column)
+    {
+      $this->distinct = $column;
+      $this->ci->db->distinct($column);
+      return $this;
+    }
+
+    /**
+    * Generates the GROUP_BY portion of the query
+    *
+    * @param string $column
+    * @return mixed
+    */
+    public function group_by($column)
+    {
+      $this->group_by = $column;
+      $this->ci->db->group_by($column);
       return $this;
     }
 
@@ -97,6 +136,36 @@
     {
       $this->where[] = array($key_condition, $val, $backtick_protect);
       $this->ci->db->where($key_condition, $val, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Generates the WHERE portion of the query
+    *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return mixed
+    */
+    public function or_where($key_condition, $val = NULL, $backtick_protect = TRUE)
+    {
+      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->ci->db->or_where($key_condition, $val, $backtick_protect);
+      return $this;
+    }
+
+    /**
+    * Generates the WHERE portion of the query
+    *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return mixed
+    */
+    public function like($key_condition, $val = NULL, $backtick_protect = TRUE)
+    {
+      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->ci->db->like($key_condition, $val, $backtick_protect);
       return $this;
     }
 
@@ -177,7 +246,7 @@
     {
       $iStart = $this->ci->input->post('iDisplayStart');
       $iLength = $this->ci->input->post('iDisplayLength');
-      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 10, ($iStart)? $iStart : 0);
+      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 100, ($iStart)? $iStart : 0);
     }
 
     /**
@@ -187,16 +256,16 @@
     */
     protected function get_ordering()
     {
-      if ($this->check_mDataprop())
+      if($this->check_mDataprop())
         $mColArray = $this->get_mDataprop();
-      elseif ($this->ci->input->post('sColumns'))
+      elseif($this->ci->input->post('sColumns'))
         $mColArray = explode(',', $this->ci->input->post('sColumns'));
       else
         $mColArray = $this->columns;
 
       $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
-
+ 
       for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
         if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
           $this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
@@ -209,16 +278,15 @@
     */
     protected function get_filtering()
     {
-      if ($this->check_mDataprop())
+      if($this->check_mDataprop())
         $mColArray = $this->get_mDataprop();
-      elseif ($this->ci->input->post('sColumns'))
+      elseif($this->ci->input->post('sColumns'))
         $mColArray = explode(',', $this->ci->input->post('sColumns'));
       else
         $mColArray = $this->columns;
 
       $sWhere = '';
       $sSearch = mysql_real_escape_string($this->ci->input->post('sSearch'));
-
       $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
@@ -237,6 +305,7 @@
         if(isset($_POST['sSearch_' . $i]) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
         {
           $miSearch = explode(',', $this->ci->input->post('sSearch_' . $i));
+
           foreach($miSearch as $val)
           {
             if(preg_match("/(<=|>=|=|<|>)(\s*)(.+)/i", trim($val), $matches))
@@ -258,7 +327,8 @@
     */
     protected function get_display_result()
     {
-      return $this->ci->db->get();
+      $data = $this->ci->db->get();
+      return $data;
     }
 
     /**
@@ -347,6 +417,7 @@
         foreach($custom_val['replacement'] as $key => $val)
         {
           $sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
+
           if(preg_match('/(\w+)\((.*)\)/i', $val, $matches) && function_exists($matches[1]))
           {
             $func = $matches[1];
@@ -379,7 +450,8 @@
     */
     protected function check_mDataprop()
     {
-      if (!$this->ci->input->post('mDataProp_0')) return FALSE;
+      if(!$this->ci->input->post('mDataProp_0'))
+        return FALSE;
 
       for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
         if(!is_numeric($this->ci->input->post('mDataProp_' . $i)))
@@ -428,18 +500,19 @@
     * @param string $close
     * @return mixed $retval
     */
-    protected function explode($delimiter, $str, $open='(', $close=')') 
+    protected function explode($delimiter, $str, $open = '(', $close=')')
     {
       $retval = array();
       $hold = array();
       $balance = 0;
       $parts = explode($delimiter, $str);
 
-      foreach ($parts as $part) 
+      foreach($parts as $part)
       {
         $hold[] = $part;
         $balance += $this->balanceChars($part, $open, $close);
-        if ($balance < 1)
+
+        if($balance < 1)
         {
           $retval[] = implode($delimiter, $hold);
           $hold = array();
@@ -447,7 +520,7 @@
         }
       }
 
-      if (count($hold) > 0)
+      if(count($hold) > 0)
         $retval[] = implode($delimiter, $hold);
 
       return $retval;
@@ -461,9 +534,14 @@
     */
     protected function jsonify($result = FALSE)
     {
-      if(is_null($result)) return 'null';
-      if($result === FALSE) return 'false';
-      if($result === TRUE) return 'true';
+      if(is_null($result))
+        return 'null';
+
+      if($result === FALSE)
+        return 'false';
+
+      if($result === TRUE)
+        return 'true';
 
       if(is_scalar($result))
       {
