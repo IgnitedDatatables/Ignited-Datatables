@@ -8,10 +8,10 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.7
+  * @version    0.8
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
-  * @link       http://codeigniter.com/forums/viewthread/160896/
+  * @link       http://ellislab.com/forums/viewthread/160896/
   */
   class Datatables
   {
@@ -19,18 +19,18 @@
     * Global container variables for chained argument results
     *
     */
-    protected $ci;
-    protected $table;
-    protected $distinct;
-    protected $group_by;
-    protected $select         = array();
-    protected $joins          = array();
-    protected $columns        = array();
-    protected $where          = array();
-    protected $filter         = array();
-    protected $add_columns    = array();
-    protected $edit_columns   = array();
-    protected $unset_columns  = array();
+    private $ci;
+    private $table;
+    private $distinct;
+    private $group_by;
+    private $select         = array();
+    private $joins          = array();
+    private $columns        = array();
+    private $where          = array();
+    private $filter         = array();
+    private $add_columns    = array();
+    private $edit_columns   = array();
+    private $unset_columns  = array();
 
     /**
     * Copies an instance of CI
@@ -42,7 +42,7 @@
 
     /**
     * If you establish multiple databases in config/database.php this will allow you to
-    * set the database (other than $active_group) - more info: http://codeigniter.com/forums/viewthread/145901/#712942
+    * set the database (other than $active_group) - more info: http://ellislab.com/forums/viewthread/145901/#712942
     */
     public function set_database($db_name)
     {
@@ -105,7 +105,6 @@
     public function from($table)
     {
       $this->table = $table;
-      $this->ci->db->from($table);
       return $this;
     }
 
@@ -162,24 +161,24 @@
     * @param bool $backtick_protect
     * @return mixed
     */
-    public function like($key_condition, $val = NULL, $backtick_protect = TRUE)
+    public function filter($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
-      $this->where[] = array($key_condition, $val, $backtick_protect);
-      $this->ci->db->like($key_condition, $val, $backtick_protect);
+      $this->filter[] = array($key_condition, $val, $backtick_protect);
       return $this;
     }
 
     /**
-    * Generates the WHERE portion of the query
+    * Generates a %LIKE% portion of the query
     *
     * @param mixed $key_condition
     * @param string $val
     * @param bool $backtick_protect
     * @return mixed
     */
-    public function filter($key_condition, $val = NULL, $backtick_protect = TRUE)
+    public function like($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
-      $this->filter[] = array($key_condition, $val, $backtick_protect);
+      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->ci->db->like($key_condition, $val, $backtick_protect);
       return $this;
     }
 
@@ -242,7 +241,7 @@
     *
     * @return mixed
     */
-    protected function get_paging()
+    private function get_paging()
     {
       $iStart = $this->ci->input->post('iDisplayStart');
       $iLength = $this->ci->input->post('iDisplayLength');
@@ -254,7 +253,7 @@
     *
     * @return mixed
     */
-    protected function get_ordering()
+    private function get_ordering()
     {
       if($this->check_mDataprop())
         $mColArray = $this->get_mDataprop();
@@ -272,11 +271,11 @@
     }
 
     /**
-    * Generates the LIKE portion of the query
+    * Generates a %LIKE% portion of the query
     *
     * @return mixed
     */
-    protected function get_filtering()
+    private function get_filtering()
     {
       if($this->check_mDataprop())
         $mColArray = $this->get_mDataprop();
@@ -325,10 +324,9 @@
     *
     * @return mixed
     */
-    protected function get_display_result()
+    private function get_display_result()
     {
-      $data = $this->ci->db->get();
-      return $data;
+      return $this->ci->db->get($this->table);
     }
 
     /**
@@ -337,7 +335,7 @@
     * @param string charset
     * @return string
     */
-    protected function produce_output($charset)
+    private function produce_output($charset)
     {
       $aaData = array();
       $rResult = $this->get_display_result();
@@ -387,7 +385,7 @@
     *
     * @return integer
     */
-    protected function get_total_results($filtering = FALSE)
+    private function get_total_results($filtering = FALSE)
     {
       if($filtering)
         $this->get_filtering();
@@ -408,7 +406,7 @@
     * @param mixed $row_data
     * @return string $custom_val['content']
     */
-    protected function exec_replace($custom_val, $row_data)
+    private function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
 
@@ -448,7 +446,7 @@
     *
     * @return bool
     */
-    protected function check_mDataprop()
+    private function check_mDataprop()
     {
       if(!$this->ci->input->post('mDataProp_0'))
         return FALSE;
@@ -465,7 +463,7 @@
     *
     * @return mixed
     */
-    protected function get_mDataprop()
+    private function get_mDataprop()
     {
       $mDataProp = array();
 
@@ -483,7 +481,7 @@
     * @param string $close
     * @return string $retval
     */
-    protected function balanceChars($str, $open, $close)
+    private function balanceChars($str, $open, $close)
     {
       $openCount = substr_count($str, $open);
       $closeCount = substr_count($str, $close);
@@ -500,7 +498,7 @@
     * @param string $close
     * @return mixed $retval
     */
-    protected function explode($delimiter, $str, $open = '(', $close=')')
+    private function explode($delimiter, $str, $open = '(', $close=')')
     {
       $retval = array();
       $hold = array();
@@ -532,7 +530,7 @@
     * @param mixed result
     * @return string
     */
-    protected function jsonify($result = FALSE)
+    private function jsonify($result = FALSE)
     {
       if(is_null($result))
         return 'null';
