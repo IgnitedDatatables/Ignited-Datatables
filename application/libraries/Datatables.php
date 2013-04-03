@@ -46,9 +46,9 @@
     */
     public function set_database($db_name)
     {
-			$db_data = $this->ci->load->database($db_name, TRUE);
-			$this->ci->db = $db_data;
-		}
+      $db_data = $this->ci->load->database($db_name, TRUE);
+      $this->ci->db = $db_data;
+    }
 
     /**
     * Generates the SELECT portion of the query
