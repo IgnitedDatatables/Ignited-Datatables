@@ -396,7 +396,10 @@
       foreach($this->where as $val)
         $this->ci->db->where($val[0], $val[1], $val[2]);
 
-      return $this->ci->db->count_all_results($this->table);
+      if($this->group_by != null)
+        $this->ci->db->group_by($this->group_by);
+      $q = $this->ci->db->get($this->table);
+      return $q->num_rows(); 
     }
 
     /**
