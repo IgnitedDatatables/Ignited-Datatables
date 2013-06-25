@@ -84,7 +84,7 @@
     }
 
     /**
-    * Generates a custum GROUP BY portion of the query
+    * Generates a custom GROUP BY portion of the query
     *
     * @param string $val
     * @return mixed
@@ -245,7 +245,7 @@
     {
       $iStart = $this->ci->input->post('iDisplayStart');
       $iLength = $this->ci->input->post('iDisplayLength');
-      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 100, ($iStart)? $iStart : 0);
+      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 10, ($iStart)? $iStart : 0);
     }
 
     /**
@@ -399,8 +399,8 @@
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
 
-      $q = $this->ci->db->get($this->table);
-      return $q->num_rows(); 
+      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
+      return $query->num_rows(); 
     }
 
     /**
