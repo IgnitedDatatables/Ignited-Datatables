@@ -22,7 +22,7 @@
     private $ci;
     private $table;
     private $distinct;
-    private $group_by;
+    private $group_by       = array();
     private $select         = array();
     private $joins          = array();
     private $columns        = array();
@@ -84,15 +84,15 @@
     }
 
     /**
-    * Generates the GROUP_BY portion of the query
+    * Generates a custum GROUP BY portion of the query
     *
-    * @param string $column
+    * @param string $val
     * @return mixed
     */
-    public function group_by($column)
+    public function group_by($val)
     {
-      $this->group_by = $column;
-      $this->ci->db->group_by($column);
+      $this->group_by[] = $val;
+      $this->ci->db->group_by($val);
       return $this;
     }
 
@@ -396,8 +396,9 @@
       foreach($this->where as $val)
         $this->ci->db->where($val[0], $val[1], $val[2]);
 
-      if($this->group_by != null)
-        $this->ci->db->group_by($this->group_by);
+      foreach($this->group_by as $val)
+        $this->ci->db->group_by($val);
+
       $q = $this->ci->db->get($this->table);
       return $q->num_rows(); 
     }
