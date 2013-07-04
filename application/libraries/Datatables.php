@@ -177,7 +177,7 @@
     */
     public function like($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
-      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->like[] = array($key_condition, $val, $backtick_protect);
       $this->ci->db->like($key_condition, $val, $backtick_protect);
       return $this;
     }
@@ -398,6 +398,9 @@
 
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
+
+      foreach($this->like as $val)
+        $this->ci->db->like($val[0], $val[1], $val[2]);
 
       $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
       return $query->num_rows(); 
