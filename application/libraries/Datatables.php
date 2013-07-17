@@ -298,28 +298,34 @@
 
       if($sWhere != '')
         $this->ci->db->where('(' . $sWhere . ')');
-      
-      $sRangeSeparator = $this->ci->input->post('sRangeSeparator'); //Separator from Datatables (~ default)
+
+      $sRangeSeparator = $this->ci->input->post('sRangeSeparator');
+
       for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
       {
         if(isset($_POST['sSearch_' . $i]) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
         {
           $miSearch = explode(',', $this->ci->input->post('sSearch_' . $i));
-          
+
           foreach($miSearch as $val)
           {
             if(preg_match("/(<=|>=|=|<|>)(\s*)(.+)/i", trim($val), $matches))
               $this->ci->db->where($this->select[$mColArray[$i]].' '.$matches[1], $matches[3]);
-            else if(preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches)){
-  			      $rangeQuery = "";
-    				  if(!empty($matches[1]))
-      					$rangeQuery = 'STR_TO_DATE('.$this->select[$mColArray[$i]].",'%d/%m/%y %H:%i:%s') >= STR_TO_DATE('".$matches[1]." 00:00:00','%d/%m/%y %H:%i:%s')";
-      				if(!empty($matches[2]))
-      					$rangeQuery .= (!empty($rangeQuery)?" AND ":"").'STR_TO_DATE('.$this->select[$mColArray[$i]].",'%d/%m/%y %H:%i:%s') <= STR_TO_DATE('".$matches[2]." 23:59:59','%d/%m/%y %H:%i:%s')";
-    				  if(!empty($matches[1]) || !empty($matches[2]))
-    					$this->ci->db->where($rangeQuery);
-			      }else
-              $this->ci->db->where($this->select[$mColArray[$i]].' LIKE', '%'.$val.'%');
+            elseif(preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches))
+            {
+              $rangeQuery = '';
+
+              if(!empty($matches[1]))
+                $rangeQuery = 'STR_TO_DATE(' . $this->select[$mColArray[$i]] . ",'%d/%m/%y %H:%i:%s') >= STR_TO_DATE('" . $matches[1] . " 00:00:00','%d/%m/%y %H:%i:%s')";
+
+              if(!empty($matches[2]))
+                $rangeQuery .= (!empty($rangeQuery)? ' AND ': '') . 'STR_TO_DATE('. $this->select[$mColArray[$i]] . ",'%d/%m/%y %H:%i:%s') <= STR_TO_DATE('" . $matches[2] . " 23:59:59','%d/%m/%y %H:%i:%s')";
+
+              if(!empty($matches[1]) || !empty($matches[2]))
+                $this->ci->db->where($rangeQuery);
+            }
+            else
+              $this->ci->db->where($this->select[$mColArray[$i]] . ' LIKE', '%' . $val . '%');
           }
         }
       }
