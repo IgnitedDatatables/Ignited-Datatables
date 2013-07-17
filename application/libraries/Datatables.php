@@ -310,7 +310,7 @@
           {
             if(preg_match("/(<=|>=|=|<|>)(\s*)(.+)/i", trim($val), $matches))
               $this->ci->db->where($this->select[$mColArray[$i]].' '.$matches[1], $matches[3]);
-            else if(preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches)){
+            else if(!empty($sRangeSeparator) && preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches)){
   			      $rangeQuery = "";
     				  if(!empty($matches[1]))
       					$rangeQuery = 'STR_TO_DATE('.$this->select[$mColArray[$i]].",'%d/%m/%y %H:%i:%s') >= STR_TO_DATE('".$matches[1]." 00:00:00','%d/%m/%y %H:%i:%s')";
