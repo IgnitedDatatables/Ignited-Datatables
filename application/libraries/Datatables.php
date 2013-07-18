@@ -221,6 +221,20 @@
       $this->unset_columns[] = $column;
       return $this;
     }
+    
+    /**
+    * Builds all the necessary query segments and performs the main query based on results set from chained statements
+	* Return the results of the actual query, no paging for better control
+    *
+    * @param string charset
+    * @return mixed
+    */
+    public function request($charset = 'UTF-8')
+    {
+      $this->get_ordering();
+      $this->get_filtering();
+      return $this->return_results($charset);
+    }	
 
     /**
     * Builds all the necessary query segments and performs the main query based on results set from chained statements
@@ -387,6 +401,43 @@
         return json_encode($sOutput);
       else
         return $this->jsonify($sOutput);
+    }
+    
+    /**
+    * Return results
+    *
+    * @param string charset
+    * @return mixed
+    */
+    private function return_results($charset)
+    {
+      $aaData = array();
+      $rResult = $this->get_display_result();
+
+      foreach($rResult->result_array() as $row_key => $row_val)
+      {
+        $aaData[$row_key] = ($this->check_mDataprop())? $row_val : array_values($row_val);
+
+        foreach($this->add_columns as $field => $val)
+          if($this->check_mDataprop())
+            $aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
+          else
+            $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
+
+        foreach($this->edit_columns as $modkey => $modval)
+          foreach($modval as $val)
+            $aaData[$row_key][($this->check_mDataprop())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
+
+        $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_mDataprop())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
+
+        if(!$this->check_mDataprop())
+          $aaData[$row_key] = array_values($aaData[$row_key]);
+      }
+	  
+	  $sColumns = array_diff($this->columns, $this->unset_columns);
+      $sColumns = array_merge_recursive($sColumns, array_keys($this->add_columns));
+
+     return array('aaData'=>$aaData,'sColumns'=>$sColumns);
     }
 
     /**
