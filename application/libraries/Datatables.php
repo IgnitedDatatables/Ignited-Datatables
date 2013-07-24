@@ -27,6 +27,7 @@
     private $joins          = array();
     private $columns        = array();
     private $where          = array();
+    private $like           = array();
     private $filter         = array();
     private $add_columns    = array();
     private $edit_columns   = array();
