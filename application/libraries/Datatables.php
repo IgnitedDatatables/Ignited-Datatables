@@ -225,15 +225,18 @@
     /**
     * Builds all the necessary query segments and performs the main query based on results set from chained statements
     *
-    * @param string charset
+    * @param string $output
+    * @param string $charset
     * @return string
     */
-    public function generate($charset = 'UTF-8')
+    public function generate($output = 'json', $charset = 'UTF-8')
     {
-      $this->get_paging();
+      if(strtolower($output) == 'json')
+        $this->get_paging();
+
       $this->get_ordering();
       $this->get_filtering();
-      return $this->produce_output($charset);
+      return $this->produce_output(strtolower($output), strtolower($charset));
     }
 
     /**
@@ -311,7 +314,7 @@
           {
             if(preg_match("/(<=|>=|=|<|>)(\s*)(.+)/i", trim($val), $matches))
               $this->ci->db->where($this->select[$mColArray[$i]].' '.$matches[1], $matches[3]);
-            elseif(preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches))
+            elseif(!empty($sRangeSeparator) && preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches))
             {
               $rangeQuery = '';
 
@@ -345,17 +348,22 @@
     }
 
     /**
-    * Builds a JSON encoded string data
+    * Builds an encoded string data. Returns JSON by default, and an array of aaData and sColumns if output is set to raw.
     *
-    * @param string charset
-    * @return string
+    * @param string $output
+    * @param string $charset
+    * @return mixed
     */
-    private function produce_output($charset)
+    private function produce_output($output, $charset)
     {
       $aaData = array();
       $rResult = $this->get_display_result();
-      $iTotal = $this->get_total_results();
-      $iFilteredTotal = $this->get_total_results(TRUE);
+
+      if($output == 'json')
+      {
+        $iTotal = $this->get_total_results();
+        $iFilteredTotal = $this->get_total_results(TRUE);
+      }
 
       foreach($rResult->result_array() as $row_key => $row_val)
       {
@@ -380,19 +388,24 @@
       $sColumns = array_diff($this->columns, $this->unset_columns);
       $sColumns = array_merge_recursive($sColumns, array_keys($this->add_columns));
 
-      $sOutput = array
-      (
-        'sEcho'                => intval($this->ci->input->post('sEcho')),
-        'iTotalRecords'        => $iTotal,
-        'iTotalDisplayRecords' => $iFilteredTotal,
-        'aaData'               => $aaData,
-        'sColumns'             => implode(',', $sColumns)
-      );
+      if($output == 'json')
+      {
+        $sOutput = array
+        (
+          'sEcho'                => intval($this->ci->input->post('sEcho')),
+          'iTotalRecords'        => $iTotal,
+          'iTotalDisplayRecords' => $iFilteredTotal,
+          'aaData'               => $aaData,
+          'sColumns'             => implode(',', $sColumns)
+        );
 
-      if(strtolower($charset) == 'utf-8')
-        return json_encode($sOutput);
+        if($charset == 'utf-8')
+          return json_encode($sOutput);
+        else
+          return $this->jsonify($sOutput);
+      }
       else
-        return $this->jsonify($sOutput);
+        return array('aaData' => $aaData, 'sColumns' => $sColumns);
     }
 
     /**
@@ -549,7 +562,7 @@
     /**
     * Workaround for json_encode's UTF-8 encoding if a different charset needs to be used
     *
-    * @param mixed result
+    * @param mixed $result
     * @return string
     */
     private function jsonify($result = FALSE)
