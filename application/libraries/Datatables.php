@@ -249,7 +249,9 @@
     {
       $iStart = $this->ci->input->post('iDisplayStart');
       $iLength = $this->ci->input->post('iDisplayLength');
-      $this->ci->db->limit(($iLength != '' && $iLength != '-1')? $iLength : 10, ($iStart)? $iStart : 0);
+      if($iLength != '' && $iLength != '-1') {
+        $this->ci->db->limit($iLength, ($iStart)? $iStart : 0);
+      }
     }
 
     /**
