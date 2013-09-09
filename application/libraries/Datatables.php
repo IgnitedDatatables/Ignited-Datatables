@@ -219,7 +219,8 @@
     */
     public function unset_column($column)
     {
-      $this->unset_columns[] = $column;
+      $column=explode(',',$column);
+      $this->unset_columns=array_merge($this->unset_columns,$column);
       return $this;
     }
 
@@ -433,8 +434,8 @@
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
 
-      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
-      return $query->num_rows(); 
+      $this->ci->db->from($this->table);
+      return $this->ci->db->count_all_results();
     }
 
     /**
