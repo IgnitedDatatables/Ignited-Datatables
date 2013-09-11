@@ -434,8 +434,18 @@
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
 
-      $this->ci->db->from($this->table);
-      return $this->ci->db->count_all_results();
+      // this count_all_results has issues when using group_by in codeigniter and gives only 
+        // the count of the first group instead of the total number of results
+        // $this->ci->db->from($this->table);
+        // return $this->ci->db->count_all_results();
+        // workaround to not use count_all_results in codeigniter and maintain sql compatible code
+        $this->ci->db->select("count(*) as num_rows");
+        $query = $this->ci->db->get($this->table);
+        $count = $query->num_rows();
+        if ($count === 1) 
+		{
+            $count = $query->row()->num_rows;
+        }
     }
 
     /**
@@ -455,7 +465,7 @@
         {
           $sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
 
-          if(preg_match('/(\w+)\((.*)\)/i', $val, $matches) && function_exists($matches[1]))
+		  if(preg_match('/(\w+::\w+|\w+)\((.*)\)/i', $val, $matches) && is_callable($matches[1]))
           {
             $func = $matches[1];
             $args = preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
