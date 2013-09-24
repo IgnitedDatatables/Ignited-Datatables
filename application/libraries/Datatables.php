@@ -27,6 +27,7 @@
     private $joins          = array();
     private $columns        = array();
     private $where          = array();
+    private $or_where       = array();
     private $like           = array();
     private $filter         = array();
     private $add_columns    = array();
@@ -149,7 +150,7 @@
     */
     public function or_where($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
-      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->or_where[] = array($key_condition, $val, $backtick_protect);
       $this->ci->db->or_where($key_condition, $val, $backtick_protect);
       return $this;
     }
@@ -428,14 +429,23 @@
       foreach($this->where as $val)
         $this->ci->db->where($val[0], $val[1], $val[2]);
 
+      foreach($this->or_where as $val)
+        $this->ci->db->or_where($val[0], $val[1], $val[2]);
+
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
 
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
 
-      $this->ci->db->from($this->table);
-      return $this->ci->db->count_all_results();
+      if(strlen($this->distinct) > 0)
+      {
+        $this->ci->db->distinct($this->distinct);
+        $this->ci->db->select($this->columns);
+      }     
+
+      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
+      return $query->num_rows(); 
     }
 
     /**
