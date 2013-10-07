@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    0.8
+  * @version    1.15
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://ellislab.com/forums/viewthread/160896/
@@ -27,6 +27,7 @@
     private $joins          = array();
     private $columns        = array();
     private $where          = array();
+    private $or_where       = array();
     private $like           = array();
     private $filter         = array();
     private $add_columns    = array();
@@ -149,7 +150,7 @@
     */
     public function or_where($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
-      $this->where[] = array($key_condition, $val, $backtick_protect);
+      $this->or_where[] = array($key_condition, $val, $backtick_protect);
       $this->ci->db->or_where($key_condition, $val, $backtick_protect);
       return $this;
     }
@@ -428,24 +429,23 @@
       foreach($this->where as $val)
         $this->ci->db->where($val[0], $val[1], $val[2]);
 
+      foreach($this->or_where as $val)
+        $this->ci->db->or_where($val[0], $val[1], $val[2]);
+
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
 
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
 
-      // this count_all_results has issues when using group_by in codeigniter and gives only 
-        // the count of the first group instead of the total number of results
-        // $this->ci->db->from($this->table);
-        // return $this->ci->db->count_all_results();
-        // workaround to not use count_all_results in codeigniter and maintain sql compatible code
-        $this->ci->db->select("count(*) as num_rows");
-        $query = $this->ci->db->get($this->table);
-        $count = $query->num_rows();
-        if ($count === 1) 
-		{
-            $count = $query->row()->num_rows;
-        }
+      if(strlen($this->distinct) > 0)
+      {
+        $this->ci->db->distinct($this->distinct);
+        $this->ci->db->select($this->columns);
+      }
+
+      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
+      return $query->num_rows();
     }
 
     /**
