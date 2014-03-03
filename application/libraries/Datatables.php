@@ -293,7 +293,7 @@
         $mColArray = $this->columns;
 
       $sWhere = '';
-      $sSearch = $this->ci->db->escape_like_str($this->ci->input->post('sSearch'));
+      $sSearch = $this->ci->db->escape_like_str(trim($this->ci->input->post('sSearch')));
       $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
