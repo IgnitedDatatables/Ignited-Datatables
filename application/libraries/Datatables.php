@@ -265,9 +265,15 @@
     {
       
       $Data = $this->ci->input->post('columns');
+
+
       if ($this->ci->input->post('order'))
         foreach ($this->ci->input->post('order') as $key) 
-          $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
+          if($this->check_cType())
+            $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
+          else
+            $this->ci->db->order_by($this->columns[$key['column']] , $key['dir']);
+
     }
 
     /**
@@ -287,8 +293,12 @@
 
       if($sSearch != '')
         for($i = 0; $i < count($mColArray); $i++)
-          if($mColArray[$i]['searchable'] == 'true' && in_array($mColArray[$i]['data'], $columns))
-            $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
+          if($mColArray[$i]['searchable'] == 'true' )
+            if($this->check_cType())
+              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
+            else
+              $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+
 
       $sWhere = substr_replace($sWhere, '', -3);
 
@@ -331,16 +341,24 @@
 
       foreach($rResult->result_array() as $row_key => $row_val)
       {
-        $aaData[$row_key] =  $row_val;
+        $aaData[$row_key] =  ($this->check_cType())? $row_val : array_values($row_val);
 
         foreach($this->add_columns as $field => $val)
+         if($this->check_cType())
             $aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
+          else
+            $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
+
 
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
-            $aaData[$row_key][$modkey] = $this->exec_replace($val, $aaData[$row_key]);
+            $aaData[$row_key][($this->check_cType())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
 
+        $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
         $aaData[$row_key] = array_diff_key($aaData[$row_key], $this->unset_columns );
+
+        if(!$this->check_cType())
+          $aaData[$row_key] = array_values($aaData[$row_key]);
 
       }
 
@@ -415,7 +433,7 @@
         {
           $sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
 
-		  if(preg_match('/(\w+::\w+|\w+)\((.*)\)/i', $val, $matches) && is_callable($matches[1]))
+      if(preg_match('/(\w+::\w+|\w+)\((.*)\)/i', $val, $matches) && is_callable($matches[1]))
           {
             $func = $matches[1];
             $args = preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
@@ -423,13 +441,13 @@
             foreach($args as $args_key => $args_val)
             {
               $args_val = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($args_val));
-              $args[$args_key] = (in_array($args_val, $this->columns))? ($row_data[$args_val]) : $args_val;
+              $args[$args_key] = (in_array($args_val, $this->columns))? ($row_data[($this->check_cType())? $args_val : array_search($args_val, $this->columns)]) : $args_val;
             }
 
             $replace_string = call_user_func_array($func, $args);
           }
           elseif(in_array($sval, $this->columns))
-            $replace_string = $row_data[$sval];
+            $replace_string = $row_data[($this->check_cType())? $sval : array_search($sval, $this->columns)];
           else
             $replace_string = $sval;
 
@@ -438,6 +456,20 @@
       }
 
       return $custom_val['content'];
+    }
+
+    /**
+    * Check column type -numeric or column name
+    *
+    * @return bool
+    */
+    private function check_cType()
+    {
+      $column = $this->ci->input->post('columns');
+      if(is_numeric($column[0]['data']))
+        return FALSE;
+      else
+        return TRUE;
     }
 
 
