@@ -15,7 +15,7 @@ Contact: Vincent Bambico <metal.conspiracy@gmail.com>
 Requirements
 ============
 jQuery 1.5+
-DataTables 1.7+
+DataTables 1.10+
 CodeIgniter "Reactor"
 
 =======
