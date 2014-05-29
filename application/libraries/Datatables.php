@@ -8,7 +8,7 @@
   * @package    CodeIgniter
   * @subpackage libraries
   * @category   library
-  * @version    1.15
+  * @version    2.0 <beta>
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://ellislab.com/forums/viewthread/160896/
@@ -249,8 +249,8 @@
     */
     private function get_paging()
     {
-      $iStart = $this->ci->input->post('iDisplayStart');
-      $iLength = $this->ci->input->post('iDisplayLength');
+      $iStart = $this->ci->input->post('start');
+      $iLength = $this->ci->input->post('length');
 
       if($iLength != '' && $iLength != '-1')
         $this->ci->db->limit($iLength, ($iStart)? $iStart : 0);
@@ -263,19 +263,11 @@
     */
     private function get_ordering()
     {
-      if($this->check_mDataprop())
-        $mColArray = $this->get_mDataprop();
-      elseif($this->ci->input->post('sColumns'))
-        $mColArray = explode(',', $this->ci->input->post('sColumns'));
-      else
-        $mColArray = $this->columns;
-
-      $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
-      $columns = array_values(array_diff($this->columns, $this->unset_columns));
- 
-      for($i = 0; $i < intval($this->ci->input->post('iSortingCols')); $i++)
-        if(isset($mColArray[intval($this->ci->input->post('iSortCol_' . $i))]) && in_array($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $columns) && $this->ci->input->post('bSortable_'.intval($this->ci->input->post('iSortCol_' . $i))) == 'true')
-          $this->ci->db->order_by($mColArray[intval($this->ci->input->post('iSortCol_' . $i))], $this->ci->input->post('sSortDir_' . $i));
+      
+      $Data = $this->ci->input->post('columns');
+      if ($this->ci->input->post('order'))
+        foreach ($this->ci->input->post('order') as $key) 
+          $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
     }
 
     /**
@@ -285,58 +277,25 @@
     */
     private function get_filtering()
     {
-      if($this->check_mDataprop())
-        $mColArray = $this->get_mDataprop();
-      elseif($this->ci->input->post('sColumns'))
-        $mColArray = explode(',', $this->ci->input->post('sColumns'));
-      else
-        $mColArray = $this->columns;
+
+      $mColArray = $this->ci->input->post('columns');
 
       $sWhere = '';
-      $sSearch = $this->ci->db->escape_like_str(trim($this->ci->input->post('sSearch')));
-      $mColArray = array_values(array_diff($mColArray, $this->unset_columns));
+      $search = $this->ci->input->post('search');
+      $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
       if($sSearch != '')
         for($i = 0; $i < count($mColArray); $i++)
-          if($this->ci->input->post('bSearchable_' . $i) == 'true' && in_array($mColArray[$i], $columns))
-            $sWhere .= $this->select[$mColArray[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+          if($mColArray[$i]['searchable'] == 'true' && in_array($mColArray[$i]['data'], $columns))
+            $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
 
       $sWhere = substr_replace($sWhere, '', -3);
 
       if($sWhere != '')
         $this->ci->db->where('(' . $sWhere . ')');
 
-      $sRangeSeparator = $this->ci->input->post('sRangeSeparator');
-
-      for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
-      {
-        if(isset($_POST['sSearch_' . $i]) && $this->ci->input->post('sSearch_' . $i) != '' && in_array($mColArray[$i], $columns))
-        {
-          $miSearch = explode(',', $this->ci->input->post('sSearch_' . $i));
-
-          foreach($miSearch as $val)
-          {
-            if(preg_match("/(<=|>=|=|<|>)(\s*)(.+)/i", trim($val), $matches))
-              $this->ci->db->where($this->select[$mColArray[$i]].' '.$matches[1], $matches[3]);
-            elseif(!empty($sRangeSeparator) && preg_match("/(.*)$sRangeSeparator(.*)/i", trim($val), $matches))
-            {
-              $rangeQuery = '';
-
-              if(!empty($matches[1]))
-                $rangeQuery = 'STR_TO_DATE(' . $this->select[$mColArray[$i]] . ",'%d/%m/%y %H:%i:%s') >= STR_TO_DATE('" . $matches[1] . " 00:00:00','%d/%m/%y %H:%i:%s')";
-
-              if(!empty($matches[2]))
-                $rangeQuery .= (!empty($rangeQuery)? ' AND ': '') . 'STR_TO_DATE('. $this->select[$mColArray[$i]] . ",'%d/%m/%y %H:%i:%s') <= STR_TO_DATE('" . $matches[2] . " 23:59:59','%d/%m/%y %H:%i:%s')";
-
-              if(!empty($matches[1]) || !empty($matches[2]))
-                $this->ci->db->where($rangeQuery);
-            }
-            else
-              $this->ci->db->where($this->select[$mColArray[$i]] . ' LIKE', '%' . $val . '%');
-          }
-        }
-      }
+      // TODO : sRangeSeparator
 
       foreach($this->filter as $val)
         $this->ci->db->where($val[0], $val[1], $val[2]);
@@ -353,7 +312,7 @@
     }
 
     /**
-    * Builds an encoded string data. Returns JSON by default, and an array of aaData and sColumns if output is set to raw.
+    * Builds an encoded string data. Returns JSON by default, and an array of aaData if output is set to raw.
     *
     * @param string $output
     * @param string $charset
@@ -372,36 +331,27 @@
 
       foreach($rResult->result_array() as $row_key => $row_val)
       {
-        $aaData[$row_key] = ($this->check_mDataprop())? $row_val : array_values($row_val);
+        $aaData[$row_key] =  $row_val;
 
         foreach($this->add_columns as $field => $val)
-          if($this->check_mDataprop())
             $aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
-          else
-            $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
 
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
-            $aaData[$row_key][($this->check_mDataprop())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
+            $aaData[$row_key][$modkey] = $this->exec_replace($val, $aaData[$row_key]);
 
-        $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_mDataprop())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
+        $aaData[$row_key] = array_diff_key($aaData[$row_key], $this->unset_columns );
 
-        if(!$this->check_mDataprop())
-          $aaData[$row_key] = array_values($aaData[$row_key]);
       }
-
-      $sColumns = array_diff($this->columns, $this->unset_columns);
-      $sColumns = array_merge_recursive($sColumns, array_keys($this->add_columns));
 
       if($output == 'json')
       {
         $sOutput = array
         (
-          'sEcho'                => intval($this->ci->input->post('sEcho')),
-          'iTotalRecords'        => $iTotal,
-          'iTotalDisplayRecords' => $iFilteredTotal,
-          'aaData'               => $aaData,
-          'sColumns'             => implode(',', $sColumns)
+          'draw'                => intval($this->ci->input->post('draw')),
+          'recordsTotal'        => $iTotal,
+          'recordsFiltered'     => $iFilteredTotal,
+          'data'                => $aaData
         );
 
         if($charset == 'utf-8')
@@ -410,7 +360,7 @@
           return $this->jsonify($sOutput);
       }
       else
-        return array('aaData' => $aaData, 'sColumns' => $sColumns);
+        return array('aaData' => $aaData);
     }
 
     /**
@@ -473,13 +423,13 @@
             foreach($args as $args_key => $args_val)
             {
               $args_val = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($args_val));
-              $args[$args_key] = (in_array($args_val, $this->columns))? ($row_data[($this->check_mDataprop())? $args_val : array_search($args_val, $this->columns)]) : $args_val;
+              $args[$args_key] = (in_array($args_val, $this->columns))? ($row_data[$args_val]) : $args_val;
             }
 
             $replace_string = call_user_func_array($func, $args);
           }
           elseif(in_array($sval, $this->columns))
-            $replace_string = $row_data[($this->check_mDataprop())? $sval : array_search($sval, $this->columns)];
+            $replace_string = $row_data[$sval];
           else
             $replace_string = $sval;
 
@@ -490,37 +440,6 @@
       return $custom_val['content'];
     }
 
-    /**
-    * Check mDataprop
-    *
-    * @return bool
-    */
-    private function check_mDataprop()
-    {
-      if(!$this->ci->input->post('mDataProp_0'))
-        return FALSE;
-
-      for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
-        if(!is_numeric($this->ci->input->post('mDataProp_' . $i)))
-          return TRUE;
-
-      return FALSE;
-    }
-
-    /**
-    * Get mDataprop order
-    *
-    * @return mixed
-    */
-    private function get_mDataprop()
-    {
-      $mDataProp = array();
-
-      for($i = 0; $i < intval($this->ci->input->post('iColumns')); $i++)
-        $mDataProp[] = $this->ci->input->post('mDataProp_' . $i);
-
-      return $mDataProp;
-    }
 
     /**
     * Return the difference of open and close characters
