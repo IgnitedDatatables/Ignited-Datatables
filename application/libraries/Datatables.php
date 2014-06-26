@@ -12,6 +12,7 @@
   * @author     Vincent Bambico <metal.conspiracy@gmail.com>
   *             Yusuf Ozdemir <yusuf@ozdemir.be>
   * @link       http://ellislab.com/forums/viewthread/160896/
+  * changes by blagi
   */
   class Datatables
   {
@@ -34,6 +35,9 @@
     private $edit_columns   = array();
     private $unset_columns  = array();
 
+    // changes by blagi
+    public $queryResult;
+    // end of changes by blagi
     /**
     * Copies an instance of CI
     */
@@ -583,6 +587,111 @@
         return '{' . join(',', $json) . '}';
       }
     }
+    // changes by blagi
+    /**
+    * Builds all the necessary query segments and performs the main query based on results set from chained statements
+    *
+    * @param string $output
+    * @param string $charset
+    * @return string
+    */
+    /* original Datatables generate() just slightly modified */
+    public function generateResult($output = 'json', $charset = 'UTF-8')
+    {
+      if(strtolower($output) == 'json')
+        $this->get_paging();
+
+      $this->get_ordering();
+      $this->get_filtering();
+      // original commented
+      // return $this->produce_output(strtolower($output), strtolower($charset));
+      // call new function result() instead produce_output()
+      return $this->getQueryResult(true);
+    }
+        // added by blagi inspired with jellehak
+    // https://github.com/IgnitedDatatables/Ignited-Datatables/issues/10
+    /**
+     * Generates the result and save it in public var $result  or return $result
+     *
+     * @param string charset
+     * @return string
+     */
+
+    private function getQueryResult($reset = false) {
+      if($this->queryResult && $reset == false) return $this->queryResult;
+
+      $rResult = $this->get_display_result();
+      return $this->queryResult = $rResult;
+    }
+    /**
+    * Builds an encoded string data. Returns JSON by default, and an array of aaData if output is set to raw.
+    *
+    * @param string $output
+    * @param string $charset
+    * @return mixed
+    */
+    /* original produce_output() modified to produce output from $result - saved and modified var */
+    public function produceOutputFromResult($output='json', $charset='utf-8')
+    {
+      $aaData = array();
+      // $rResult = $this->get_display_result();
+      $resObj = $this->getQueryResult()->result(); // added by blagi - get queryResult
+
+      if($output == 'json')
+      {
+        $iTotal = $this->get_total_results();
+        $iFilteredTotal = $this->get_total_results(TRUE);
+      }
+
+      foreach($resObj as $row_key => $row_v)
+      {
+        // added by blagi - instead of db query result result_array() - 
+        //  object is used and transformed to array. 
+        //  It's easier to changed db query result object
+        $row_val = get_object_vars($row_v); 
+
+        $aaData[$row_key] =  ($this->check_cType())? $row_val : array_values($row_val);
+
+        foreach($this->add_columns as $field => $val)
+         if($this->check_cType())
+            $aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
+          else
+            $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
+
+
+        foreach($this->edit_columns as $modkey => $modval)
+          foreach($modval as $val)
+            $aaData[$row_key][($this->check_cType())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
+
+        $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
+        $aaData[$row_key] = array_diff_key($aaData[$row_key], $this->unset_columns );
+
+        if(!$this->check_cType())
+          $aaData[$row_key] = array_values($aaData[$row_key]);
+
+      }
+
+      if($output == 'json')
+      {
+        $sOutput = array
+        (
+          'draw'                => intval($this->ci->input->post('draw')),
+          'recordsTotal'        => $iTotal,
+          'recordsFiltered'     => $iFilteredTotal,
+          'data'                => $aaData
+        );
+
+        if($charset == 'utf-8')
+          return json_encode($sOutput);
+        else
+          return $this->jsonify($sOutput);
+      }
+      else
+        return array('aaData' => $aaData);
+    }
+  
+    // end of changes by blagi
+
   }
 /* End of file Datatables.php */
 /* Location: ./application/libraries/Datatables.php */
