@@ -305,6 +305,16 @@
       if($sWhere != '')
         $this->ci->db->where('(' . $sWhere . ')');
 
+      // Individual column filtering
+      $individual = '';
+      for($i = 0; $i < count($mColArray); $i++)
+        if($mColArray[$i]['searchable'] == 'true' && isset($mColArray[$i]['search']['value']) && !empty($mColArray[$i]['search']['value']))
+          $individual .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $mColArray[$i]['search']['value'] . "%' AND ";
+
+      $individual = substr_replace($individual, '', -4);
+      if($individual != '')
+        $this->ci->db->where('(' . $individual . ')');
+
       // TODO : sRangeSeparator
 
       foreach($this->filter as $val)
