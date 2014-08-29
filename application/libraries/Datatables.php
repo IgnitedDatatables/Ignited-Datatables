@@ -429,6 +429,8 @@
 
       if(isset($custom_val['replacement']) && is_array($custom_val['replacement']))
       {
+        //Added this line because when the replacement has over 10 elements replaced the variable "$1" first by the "$10"
+        $custom_val['replacement'] = array_reverse($custom_val['replacement'], true);
         foreach($custom_val['replacement'] as $key => $val)
         {
           $sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
