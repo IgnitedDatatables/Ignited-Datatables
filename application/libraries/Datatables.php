@@ -65,6 +65,7 @@
       foreach($this->explode(',', $columns) as $val)
       {
         $column = trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$2', $val));
+        $column = preg_replace('/.*\.(.*)/i', '$1', $column); // get name after `.`
         $this->columns[] =  $column;
         $this->select[$column] =  trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$1', $val));
       }
@@ -279,12 +280,12 @@
     */
     private function get_ordering()
     {
-      
+
       $Data = $this->ci->input->post('columns');
 
 
       if ($this->ci->input->post('order'))
-        foreach ($this->ci->input->post('order') as $key) 
+        foreach ($this->ci->input->post('order') as $key)
           if($this->check_cType())
             $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
           else
