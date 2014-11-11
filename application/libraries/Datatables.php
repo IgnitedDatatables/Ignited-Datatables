@@ -372,7 +372,6 @@
             $aaData[$row_key][($this->check_cType())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
 
         $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
-        $aaData[$row_key] = array_diff_key($aaData[$row_key], $this->unset_columns );
 
         if(!$this->check_cType())
           $aaData[$row_key] = array_values($aaData[$row_key]);
