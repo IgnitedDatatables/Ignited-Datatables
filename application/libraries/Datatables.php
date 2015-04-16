@@ -417,7 +417,7 @@
         $this->ci->db->or_where($val[0], $val[1], $val[2]);
         
       foreach($this->where_in as $val)
-        $this->ci->db->where_in($val[0], $val[1], $val[2]);
+        $this->ci->db->where_in($val[0], $val[1]);
 
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
