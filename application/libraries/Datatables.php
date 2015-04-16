@@ -165,10 +165,10 @@
     * @param bool $backtick_protect
     * @return mixed
     */
-    public function where_in($key_condition, $val = NULL, $backtick_protect = TRUE)
+    public function where_in($key_condition, $val = NULL)
     {
-      $this->where_in[] = array($key_condition, $val, $backtick_protect);
-      $this->ci->db->where_in($key_condition, $val, $backtick_protect);
+      $this->where_in[] = array($key_condition, $val);
+      $this->ci->db->where_in($key_condition, $val);
       return $this;
     }
 
@@ -194,10 +194,10 @@
     * @param bool $backtick_protect
     * @return mixed
     */
-    public function like($key_condition, $val = NULL, $backtick_protect = TRUE)
+    public function like($key_condition, $val = NULL, $side = 'both')
     {
-      $this->like[] = array($key_condition, $val, $backtick_protect);
-      $this->ci->db->like($key_condition, $val, $backtick_protect);
+      $this->like[] = array($key_condition, $val, $side);
+      $this->ci->db->like($key_condition, $val, $side);
       return $this;
     }
 
