@@ -212,8 +212,8 @@
     */
     public function or_like($key_condition, $val = NULL, $side = 'both')
     {
-      $this->or_like[] = array($key_condition, $val, $backtick_protect);
-      $this->ci->db->or_like($key_condition, $val, $backtick_protect);
+      $this->or_like[] = array($key_condition, $val, $side);
+      $this->ci->db->or_like($key_condition, $val, $side);
       return $this;
     }
 
