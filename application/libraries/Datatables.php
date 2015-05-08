@@ -41,6 +41,7 @@
     public function __construct()
     {
       $this->ci =& get_instance();
+			$this->params = $this->ci->input->post();
     }
 
     /**
@@ -51,6 +52,14 @@
     {
       $db_data = $this->ci->load->database($db_name, TRUE);
       $this->ci->db = $db_data;
+    }
+
+    /**
+    * Specify the datatable response data 
+    */
+    public function set_params($params)
+    {
+	$this->params = $params;
     }
 
     /**
@@ -266,8 +275,8 @@
     */
     private function get_paging()
     {
-      $iStart = $this->ci->input->post('start');
-      $iLength = $this->ci->input->post('length');
+      $iStart = $this->params['start'];
+      $iLength = $this->params['length'];
 
       if($iLength != '' && $iLength != '-1')
         $this->ci->db->limit($iLength, ($iStart)? $iStart : 0);
@@ -281,11 +290,11 @@
     private function get_ordering()
     {
 
-      $Data = $this->ci->input->post('columns');
+      $Data = $this->params['columns'];
 
 
-      if ($this->ci->input->post('order'))
-        foreach ($this->ci->input->post('order') as $key)
+      if ($this->params['order'])
+        foreach ($this->params['order'] as $key)
           if($this->check_cType())
             $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
           else
@@ -301,10 +310,10 @@
     private function get_filtering()
     {
 
-      $mColArray = $this->ci->input->post('columns');
+      $mColArray = $this->params['columns'];
 
       $sWhere = '';
-      $search = $this->ci->input->post('search');
+      $search = $this->params['search'];
       $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
@@ -312,7 +321,7 @@
         for($i = 0; $i < count($mColArray); $i++)
           if($mColArray[$i]['searchable'] == 'true' )
             if($this->check_cType())
-              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
+              $sWhere .= $mColArray[$i]['data'] . " LIKE '%" . $sSearch . "%' OR ";
             else
               $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
 
@@ -382,7 +391,7 @@
       {
         $sOutput = array
         (
-          'draw'                => intval($this->ci->input->post('draw')),
+          'draw'                => intval($this->params['draw']),
           'recordsTotal'        => $iTotal,
           'recordsFiltered'     => $iFilteredTotal,
           'data'                => $aaData
@@ -486,7 +495,7 @@
     */
     private function check_cType()
     {
-      $column = $this->ci->input->post('columns');
+      $column = $this->params['columns'];
       if(is_numeric($column[0]['data']))
         return FALSE;
       else
