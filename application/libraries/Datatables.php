@@ -59,7 +59,7 @@
     */
     public function set_params($params)
     {
-	$this->params = $params;
+			$this->params = $params;
     }
 
     /**
@@ -239,6 +239,18 @@
     }
 
     /**
+    * Sets row index
+    *
+    * @param string $field
+    * @return mixed
+    */
+    public function set_row_index($field)
+    {
+      $this->row_index = $field;
+      return $this;
+    }
+
+    /**
     * Unset column
     *
     * @param string $column
@@ -260,7 +272,7 @@
     */
     public function generate($output = 'json', $charset = 'UTF-8')
     {
-      if(strtolower($output) == 'json')
+      if(strtolower($output) == 'json' || $output == 'array')
         $this->get_paging();
 
       $this->get_ordering();
@@ -359,7 +371,7 @@
       $aaData = array();
       $rResult = $this->get_display_result();
 
-      if($output == 'json')
+      if($output == 'json' || $output == 'array')
       {
         $iTotal = $this->get_total_results();
         $iFilteredTotal = $this->get_total_results(TRUE);
@@ -375,19 +387,23 @@
           else
             $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
 
-
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
             $aaData[$row_key][($this->check_cType())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
 
-        $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
+				if (!empty($this->row_index))
+				{
+					$aaData[$row_key][($this->check_cType())? $this->row_index : array_search($this->row_index, $this->columns)] = intval($this->params['start']) + $row_key + 1;
+				}
+			
+				$aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
 
         if(!$this->check_cType())
           $aaData[$row_key] = array_values($aaData[$row_key]);
 
       }
 
-      if($output == 'json')
+      if($output == 'json' || $output == 'array')
       {
         $sOutput = array
         (
@@ -398,7 +414,7 @@
         );
 
         if($charset == 'utf-8')
-          return json_encode($sOutput);
+          return ($output == 'array') ? $sOutput : json_encode($sOutput);
         else
           return $this->jsonify($sOutput);
       }
