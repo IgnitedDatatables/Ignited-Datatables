@@ -23,6 +23,7 @@
     private $table;
     private $distinct;
     private $group_by       = array();
+    private $having         = array();
     private $select         = array();
     private $joins          = array();
     private $columns        = array();
@@ -106,6 +107,19 @@
     {
       $this->group_by[] = $val;
       $this->ci->db->group_by($val);
+      return $this;
+    }
+
+    /**
+    * Generates a custom HAVING portion of the query
+    *
+    * @param string $val
+    * @return mixed
+    */
+    public function having($val)
+    {
+      $this->having[] = $val;
+      $this->ci->db->having($val);
       return $this;
     }
 
@@ -446,6 +460,9 @@
 
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
+
+      foreach($this->having as $val)
+        $this->ci->db->having($val);
 
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
