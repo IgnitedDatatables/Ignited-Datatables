@@ -300,32 +300,45 @@
     */
     private function get_filtering()
     {
+		$mColArray = $this->ci->input->post('columns');
+		$sWhere = '';
+		$search = $this->ci->input->post('search');
+		$sSearch = $this->ci->db->escape_like_str(trim($search['value']));
+		$columns = array_values(array_diff($this->columns, $this->unset_columns));
 
-      $mColArray = $this->ci->input->post('columns');
+		if($sSearch != ''){
+			for($i = 0; $i < count($mColArray); $i++){
+			  if($mColArray[$i]['searchable'] == 'true' )
+				if($this->check_cType())
+				  $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
+				else
+				  $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+			}
+			$sWhere = substr_replace($sWhere, '', -3);
+			if($sWhere != '')
+				$this->ci->db->where('(' . $sWhere . ')');
+		}
+		
+		$sWhere = '';
+		for($i = 0; $i < count($mColArray); $i++){
+			$sSearch = $this->ci->db->escape_like_str(trim($mColArray[$i]['search']['value']));
+			if($mColArray[$i]['searchable'] == 'true' && !empty($sSearch) )
+			if($this->check_cType())
+			  $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' AND ";
+			else
+			  $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' AND ";
+		}
+		$sWhere = substr_replace($sWhere, '', -4);
 
-      $sWhere = '';
-      $search = $this->ci->input->post('search');
-      $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
-      $columns = array_values(array_diff($this->columns, $this->unset_columns));
+		if($sWhere != '')
+			$this->ci->db->where('(' . $sWhere . ')');
 
-      if($sSearch != '')
-        for($i = 0; $i < count($mColArray); $i++)
-          if($mColArray[$i]['searchable'] == 'true' )
-            if($this->check_cType())
-              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
-            else
-              $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+		// TODO : sRangeSeparator
 
-
-      $sWhere = substr_replace($sWhere, '', -3);
-
-      if($sWhere != '')
-        $this->ci->db->where('(' . $sWhere . ')');
-
-      // TODO : sRangeSeparator
-
-      foreach($this->filter as $val)
-        $this->ci->db->where($val[0], $val[1], $val[2]);
+		foreach($this->filter as $val)
+			$this->ci->db->where($val[0], $val[1], $val[2]);
+		
+		//echo $sWhere ;
     }
 
     /**
