@@ -310,7 +310,7 @@
 
       if($sSearch != '')
         for($i = 0; $i < count($mColArray); $i++)
-          if($mColArray[$i]['searchable'] == 'true' )
+          if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'], $this->add_columns))
             if($this->check_cType())
               $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
             else
