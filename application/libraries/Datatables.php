@@ -30,6 +30,7 @@
     private $or_where       = array();
     private $where_in       = array();
     private $like           = array();
+    private $or_like        = array();
     private $filter         = array();
     private $add_columns    = array();
     private $edit_columns   = array();
@@ -198,6 +199,21 @@
     {
       $this->like[] = array($key_condition, $val, $side);
       $this->ci->db->like($key_condition, $val, $side);
+      return $this;
+    }
+
+    /**
+    * Generates the OR %LIKE% portion of the query
+    *
+    * @param mixed $key_condition
+    * @param string $val
+    * @param bool $backtick_protect
+    * @return mixed
+    */
+    public function or_like($key_condition, $val = NULL, $side = 'both')
+    {
+      $this->or_like[] = array($key_condition, $val, $side);
+      $this->ci->db->or_like($key_condition, $val, $side);
       return $this;
     }
 
@@ -424,6 +440,9 @@
 
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
+
+      foreach($this->or_like as $val)
+        $this->ci->db->or_like($val[0], $val[1], $val[2]);
 
       if(strlen($this->distinct) > 0)
       {
