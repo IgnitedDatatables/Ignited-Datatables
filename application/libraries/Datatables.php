@@ -337,11 +337,11 @@
       else{
         for($i = 0; $i < count($mColArray); $i++){
           if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'], $this->add_columns) && $mColArray[$i]['search']['value']!=''){
-
+	    $sSearch = $this->ci->db->escape_like_str(trim($mColArray[$i]['search']['value']));
             if($this->check_cType())
-              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $mColArray[$i]['search']['value'] . "%' AND ";
+              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' AND ";
             else
-              $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $mColArray[$i]['search']['value'] . "%' AND ";
+              $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' AND ";
           }
         }
         $sWhere = substr_replace($sWhere, '', -4);
