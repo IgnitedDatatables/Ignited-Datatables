@@ -109,6 +109,7 @@
     */
     public function from($table)
     {
+      $this->ci->db->from($table);
       $this->table = $table;
       return $this;
     }
@@ -351,7 +352,7 @@
     */
     private function get_display_result()
     {
-      return $this->ci->db->get($this->table);
+      return $this->ci->db->get();
     }
 
     /**
@@ -420,6 +421,8 @@
     */
     private function get_total_results($filtering = FALSE)
     {
+      $this->ci->db->from($this->table);
+	    
       if($filtering)
         $this->get_filtering();
 
@@ -446,11 +449,11 @@
 
       if(strlen($this->distinct) > 0)
       {
-        $this->ci->db->distinct($this->distinct);
-        $this->ci->db->select($this->columns);
+        $this->ci->db->distinct();
+        $this->ci->db->select($this->select);
       }
 
-      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
+      $query = $this->ci->db->get(NULL, NULL, NULL, FALSE);
       return $query->num_rows();
     }
 
