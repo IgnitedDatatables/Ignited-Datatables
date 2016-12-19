@@ -23,6 +23,7 @@
     private $table;
     private $distinct;
     private $group_by       = array();
+    private $having         = array();
     private $select         = array();
     private $joins          = array();
     private $columns        = array();
@@ -42,6 +43,7 @@
     public function __construct()
     {
       $this->ci =& get_instance();
+			$this->params = $this->ci->input->post();
     }
 
     /**
@@ -52,6 +54,14 @@
     {
       $db_data = $this->ci->load->database($db_name, TRUE);
       $this->ci->db = $db_data;
+    }
+
+    /**
+    * Specify the datatable response data 
+    */
+    public function set_params($params)
+    {
+			$this->params = $params;
     }
 
     /**
@@ -98,6 +108,19 @@
     {
       $this->group_by[] = $val;
       $this->ci->db->group_by($val);
+      return $this;
+    }
+
+    /**
+    * Generates a custom HAVING portion of the query
+    *
+    * @param string $val
+    * @return mixed
+    */
+    public function having($val)
+    {
+      $this->having[] = $val;
+      $this->ci->db->having($val);
       return $this;
     }
 
@@ -246,6 +269,18 @@
     }
 
     /**
+    * Sets row index
+    *
+    * @param string $field
+    * @return mixed
+    */
+    public function set_row_index($field)
+    {
+      $this->row_index = $field;
+      return $this;
+    }
+
+    /**
     * Unset column
     *
     * @param string $column
@@ -267,7 +302,7 @@
     */
     public function generate($output = 'json', $charset = 'UTF-8')
     {
-      if(strtolower($output) == 'json')
+      if(strtolower($output) == 'json' || $output == 'array')
         $this->get_paging();
 
       $this->get_ordering();
@@ -282,8 +317,8 @@
     */
     private function get_paging()
     {
-      $iStart = $this->ci->input->post('start');
-      $iLength = $this->ci->input->post('length');
+      $iStart = $this->params['start'];
+      $iLength = $this->params['length'];
 
       if($iLength != '' && $iLength != '-1')
         $this->ci->db->limit($iLength, ($iStart)? $iStart : 0);
@@ -297,11 +332,11 @@
     private function get_ordering()
     {
 
-      $Data = $this->ci->input->post('columns');
+      $Data = $this->params['columns'];
 
 
-      if ($this->ci->input->post('order'))
-        foreach ($this->ci->input->post('order') as $key)
+      if ($this->params['order'])
+        foreach ($this->params['order'] as $key)
           if($this->check_cType())
             $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
           else
@@ -317,10 +352,10 @@
     private function get_filtering()
     {
 
-      $mColArray = $this->ci->input->post('columns');
+      $mColArray = $this->params['columns'];
 
       $sWhere = '';
-      $search = $this->ci->input->post('search');
+      $search = $this->params['search'];
       $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
@@ -328,7 +363,7 @@
         for($i = 0; $i < count($mColArray); $i++)
           if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'], $this->add_columns))
             if($this->check_cType())
-              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
+              $sWhere .= $mColArray[$i]['data'] . " LIKE '%" . $sSearch . "%' OR ";
             else
               $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
 
@@ -366,7 +401,7 @@
       $aaData = array();
       $rResult = $this->get_display_result();
 
-      if($output == 'json')
+      if($output == 'json' || $output == 'array')
       {
         $iTotal = $this->get_total_results();
         $iFilteredTotal = $this->get_total_results(TRUE);
@@ -382,30 +417,34 @@
           else
             $aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
 
-
         foreach($this->edit_columns as $modkey => $modval)
           foreach($modval as $val)
             $aaData[$row_key][($this->check_cType())? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
 
-        $aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
+				if (!empty($this->row_index))
+				{
+					$aaData[$row_key][($this->check_cType())? $this->row_index : array_search($this->row_index, $this->columns)] = intval($this->params['start']) + $row_key + 1;
+				}
+			
+				$aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType())? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
 
         if(!$this->check_cType())
           $aaData[$row_key] = array_values($aaData[$row_key]);
 
       }
 
-      if($output == 'json')
+      if($output == 'json' || $output == 'array')
       {
         $sOutput = array
         (
-          'draw'                => intval($this->ci->input->post('draw')),
+          'draw'                => intval($this->params['draw']),
           'recordsTotal'        => $iTotal,
           'recordsFiltered'     => $iFilteredTotal,
           'data'                => $aaData
         );
 
         if($charset == 'utf-8')
-          return json_encode($sOutput);
+          return ($output == 'array') ? $sOutput : json_encode($sOutput);
         else
           return $this->jsonify($sOutput);
       }
@@ -437,6 +476,9 @@
 
       foreach($this->group_by as $val)
         $this->ci->db->group_by($val);
+
+      foreach($this->having as $val)
+        $this->ci->db->having($val);
 
       foreach($this->like as $val)
         $this->ci->db->like($val[0], $val[1], $val[2]);
@@ -508,7 +550,7 @@
     */
     private function check_cType()
     {
-      $column = $this->ci->input->post('columns');
+      $column = $this->params['columns'];
       if(is_numeric($column[0]['data']))
         return FALSE;
       else
