@@ -35,6 +35,7 @@
     private $add_columns    = array();
     private $edit_columns   = array();
     private $unset_columns  = array();
+    private $use_xss = true;
 
     /**
     * Copies an instance of CI
@@ -265,8 +266,10 @@
     * @param string $charset
     * @return string
     */
-    public function generate($output = 'json', $charset = 'UTF-8')
+    public function generate($safe = true, $output = 'json', $charset = 'UTF-8')
     {
+      $this->use_xss = $safe;
+
       if(strtolower($output) == 'json')
         $this->get_paging();
 
@@ -282,8 +285,8 @@
     */
     private function get_paging()
     {
-      $iStart = $this->ci->input->post('start');
-      $iLength = $this->ci->input->post('length');
+      $iStart = $this->ci->input->post('start', $this->use_xss);
+      $iLength = $this->ci->input->post('length', $this->use_xss);
 
       if($iLength != '' && $iLength != '-1')
         $this->ci->db->limit($iLength, ($iStart)? $iStart : 0);
@@ -298,14 +301,16 @@
     {
 
       $Data = $this->ci->input->post('columns');
+      $order = $this->ci->input->post('order');
 
-
-      if ($this->ci->input->post('order'))
-        foreach ($this->ci->input->post('order') as $key)
+      if ($order) {
+        foreach ($order as $key) { 
           if($this->check_cType())
             $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
           else
             $this->ci->db->order_by($this->columns[$key['column']] , $key['dir']);
+        }
+      }
 
     }
 
@@ -317,10 +322,10 @@
     private function get_filtering()
     {
 
-      $mColArray = $this->ci->input->post('columns');
+      $mColArray = $this->ci->input->post('columns', $this->use_xss);
 
       $sWhere = '';
-      $search = $this->ci->input->post('search');
+      $search = $this->ci->input->post('search', $this->use_xss);
       $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
@@ -398,19 +403,16 @@
       {
         $sOutput = array
         (
-          'draw'                => intval($this->ci->input->post('draw')),
+          'draw'                => intval($this->ci->input->post('draw'), $this->use_xss),
           'recordsTotal'        => $iTotal,
           'recordsFiltered'     => $iFilteredTotal,
           'data'                => $aaData
         );
 
-        if($charset == 'utf-8')
-          return json_encode($sOutput);
-        else
-          return $this->jsonify($sOutput);
-      }
-      else
+        return json_encode($sOutput);
+      } else {
         return array('aaData' => $aaData);
+      }
     }
 
     /**
@@ -508,7 +510,7 @@
     */
     private function check_cType()
     {
-      $column = $this->ci->input->post('columns');
+      $column = $this->ci->input->post('columns', $this->use_xss);
       if(is_numeric($column[0]['data']))
         return FALSE;
       else
@@ -626,8 +628,8 @@
         return '{' . join(',', $json) . '}';
       }
     }
-	
-	 /**
+  
+   /**
      * returns the sql statement of the last query run
      * @return type
      */
