@@ -9,7 +9,7 @@
 	 * @package    CodeIgniter
 	 * @subpackage libraries
 	 * @category   library
-	 * @version    2.0 <beta>
+	 * @version    2.0.1 <beta>
 	 * @author     Vincent Bambico <metal.conspiracy@gmail.com>
 	 *             Yusuf Ozdemir <yusuf@ozdemir.be>
 	 * @link       http://ellislab.com/forums/viewthread/160896/
@@ -69,6 +69,8 @@
 		/**
 		 * Generates the SELECT portion of the query
 		 *
+		 * @since 2.0.1 Changed some variable names for consistency
+		 *
 		 * @param string $columns
 		 * @param bool $escape
 		 * @return mixed
@@ -112,6 +114,8 @@
 		/**
 		 * Generates a custom GROUP BY portion of the query
 		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
+		 *
 		 * @param string $value
 		 * @param bool $escape
 		 * @return mixed
@@ -119,7 +123,7 @@
 
 		public function group_by($value, $escape = true) {
 
-			$this->group_by[]	= array('value'		=> $value, 
+			$this->group_by[]	= array('value'		=> $value,
 							'escape'	=> $escape);
 
 			$this->ci->db->group_by($value, $escape);
@@ -131,12 +135,14 @@
 		/**
 		 * Generates the FROM portion of the query
 		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
+		 *
 		 * @param string $table
 		 * @return mixed
 		 */
 
 		public function from($table) {
-			
+
 			$this->ci->db->from($table);								// Issue #78, fix by oobi
 			$this->table			= $table;
 
@@ -147,6 +153,8 @@
 		/**
 		 * Generates the JOIN portion of the query
 		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
+		 *
 		 * @param string $table
 		 * @param string $cond
 		 * @param string $type
@@ -156,9 +164,9 @@
 
 		public function join($table, $cond, $type = null, $escape = null) {
 
-			$this->joins[]		= array('table'		=> $table, 
-							'cond'		=> $cond, 
-							'type'		=> $type, 
+			$this->joins[]		= array('table'		=> $table,
+							'cond'		=> $cond,
+							'type'		=> $type,
 							'escape'	=> $escape);
 
 			$this->ci->db->join($table, $cond, $type, $escape);
@@ -170,6 +178,8 @@
 		/**
 		 * Generates the WHERE portion of the query
 		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
+		 *
 		 * @param mixed $key
 		 * @param string $value
 		 * @param bool $escape
@@ -179,9 +189,9 @@
 		public function where($key, $value = null, $escape = true) {
 
 			$this->where[]		= array('key'		=> $key,
-							'value'		=> $value, 
+							'value'		=> $value,
 							'escape'	=> $escape);
-						
+
 			$this->ci->db->where($key, $value, $escape);
 
 			return $this;
@@ -200,9 +210,9 @@
 		public function or_where($key, $value = null, $escape = true) {
 
 			$this->or_where[]	= array('key'		=> $key,
-							'value'		=> $value, 
+							'value'		=> $value,
 							'escape'	=> $escape);
-						
+
 			$this->ci->db->or_where($key, $value, $escape);
 
 			return $this;
@@ -211,6 +221,8 @@
 
 		/**
 		 * Generates the WHERE IN portion of the query
+		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
 		 *
 		 * @param mixed $key
 		 * @param string $value
@@ -221,9 +233,9 @@
 		public function where_in($key, $value = null, $escape = true) {
 
 			$this->where_in[]	= array('key'		=> $key,
-							'value'		=> $value, 
+							'value'		=> $value,
 							'escape'	=> $escape);
-							
+
 			$this->ci->db->where_in($key, $value, $escape);
 
 			return $this;
@@ -232,6 +244,8 @@
 
 		/**
 		 * Generates the WHERE portion of the query
+		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
 		 *
 		 * @param mixed $key
 		 * @param string $value
@@ -242,7 +256,7 @@
 		public function filter($key, $value = null, $escape = true) {
 
 			$this->filter[]		= array('key'		=> $key,
-							'value'		=> $value, 
+							'value'		=> $value,
 							'escape'	=> $escape);
 
 			return $this;
@@ -251,6 +265,8 @@
 
 		/**
 		 * Generates a %LIKE% portion of the query
+		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
 		 *
 		 * @param mixed $field
 		 * @param string $match
@@ -261,11 +277,11 @@
 
 		public function like($field, $match = '', $side = 'both', $escape = NULL) {
 
-			$this->like[]		= array('field'		=> $field, 
-							'match'		=> $match, 
-							'side'		=> $side, 
+			$this->like[]		= array('field'		=> $field,
+							'match'		=> $match,
+							'side'		=> $side,
 							'escape'	=> $escape);
-							
+
 			$this->ci->db->like($field, $match, $side, $escape);
 
 			return $this;
@@ -274,6 +290,8 @@
 
 		/**
 		 * Generates the OR %LIKE% portion of the query
+		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
 		 *
 		 * @param mixed $field
 		 * @param string $match
@@ -284,11 +302,11 @@
 
 		public function or_like($field, $match = '', $side = 'both', $escape = NULL) {
 
-			$this->or_like[]	= array('field'		=> $field, 
-							'match'		=> $match, 
-							'side'		=> $side, 
+			$this->or_like[]	= array('field'		=> $field,
+							'match'		=> $match,
+							'side'		=> $side,
 							'escape'	=> $escape);
-							
+
 			$this->ci->db->or_like($field, $match, $side, $escape);
 
 			return $this;
@@ -297,6 +315,8 @@
 
 		/**
 		 * Sets additional column variables for adding custom columns
+		 *
+		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
 		 *
 		 * @param string $column
 		 * @param string $content
@@ -340,7 +360,7 @@
 
 		public function unset_column($column) {
 
-			$column				= array_flip(explode(',', $column));			// Issue #66, fix by ajindam 
+			$column				= array_flip(explode(',', $column));			// Issue #66, fix by ajindam
 			$this->unset_columns		= array_merge($this->unset_columns, $column);
 
 			return $this;
@@ -376,8 +396,8 @@
 
 		private function get_paging() {
 
-			$iStart = $this->ci->input->post('start');
-			$iLength = $this->ci->input->post('length');
+			$iStart		= $this->ci->input->post('start');
+			$iLength	= $this->ci->input->post('length');
 
 			if ($iLength != '' && $iLength != '-1') {
 				$this->ci->db->limit($iLength, ($iStart) ? $iStart : 0);
@@ -393,7 +413,7 @@
 
 		private function get_ordering() {
 
-			$Data = $this->ci->input->post('columns');
+			$Data	= $this->ci->input->post('columns');
 
 			if ($this->ci->input->post('order')) {
 
@@ -423,12 +443,13 @@
 
 		private function get_filtering() {
 
-			$mColArray = $this->ci->input->post('columns');
+			$mColArray	= $this->ci->input->post('columns');
 
-			$sWhere = '';
-			$search = $this->ci->input->post('search');
-			$sSearch = $this->ci->db->escape_like_str(trim($search['value']));
-			$columns = array_values(array_diff($this->columns, $this->unset_columns));
+			$sWhere		= '';
+			$search		= $this->ci->input->post('search');
+			$sSearch	= $this->ci->db->escape_like_str(trim($search['value']));
+
+			$columns	= array_values(array_diff($this->columns, $this->unset_columns));
 
 			if ($sSearch != '') {
 
@@ -438,11 +459,11 @@
 
 						if ($this->check_cType()) {
 
-							$sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
+							$sWhere	.= $this->select[$mColArray[$i]['data']]." LIKE '%".$sSearch."%' OR ";
 
 						} else {
 
-							$sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+							$sWhere	.= $this->select[$this->columns[$i]]." LIKE '%".$sSearch."%' OR ";
 
 						}
 
@@ -452,10 +473,10 @@
 
 			}
 
-			$sWhere = substr_replace($sWhere, '', -3);
+			$sWhere	= substr_replace($sWhere, '', -3);
 
 			if ($sWhere != '') {
-				$this->ci->db->where('(' . $sWhere . ')');
+				$this->ci->db->where('('.$sWhere.')');
 			}
 
 			// TODO : sRangeSeparator
@@ -469,17 +490,21 @@
 		/**
 		 * Compiles the select statement based on the other functions called and runs the query
 		 *
+		 * @since 2.0.1 Removed table-name because of issue #78, fix by oobi
+		 *
 		 * @return mixed
 		 */
 
 		private function get_display_result() {
 
-			return $this->ci->db->get();								// Issue #78, fix by oobi
+			return $this->ci->db->get();
 
 		}
 
 		/**
 		 * Builds an encoded string data. Returns JSON by default, and an array of aaData if output is set to raw.
+		 *
+		 * @since 2.0.1 output and charset are now only "sanitized" in this function and nowhere else
 		 *
 		 * @param  string $output
 		 * @param  string $charset
@@ -494,10 +519,10 @@
 			$rResult	= $this->get_display_result();
 
 			if ($output == 'json') {
-				
+
 				$iTotal		= $this->get_total_results();
 				$iFilteredTotal	= $this->get_total_results(true);
-				
+
 			}
 
 			foreach ($rResult->result_array() as $row_key => $row_val) {
@@ -541,10 +566,10 @@
 
 			if ($output == 'json') {
 
-				$sOutput = array('draw'                => intval($this->ci->input->post('draw')),
-						'recordsTotal'        => $iTotal,
-						'recordsFiltered'     => $iFilteredTotal,
-						'data'                => $aaData		);
+				$sOutput	= array('draw'			=> intval($this->ci->input->post('draw')),
+							'recordsTotal'		=> $iTotal,
+							'recordsFiltered'	=> $iFilteredTotal,
+							'data'			=> $aaData		);
 
 				if ($charset == 'utf-8') {
 					return json_encode($sOutput);
@@ -575,7 +600,7 @@
 
 			// Set FROM early so table aliases are respected - Issue #78, fix by oobi
 			$this->ci->db->from($this->table);
-    
+
 			foreach ($this->joins as $val) {
 				$this->ci->db->join($val['table'], $val['cond'], $val['type'], $val['escape']);
 			}
@@ -645,7 +670,7 @@
 						$args			= preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
 						foreach ($args as $args_key => $args_val) {
-							
+
 							$args_val		= preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($args_val));
 							$args[$args_key]	= (in_array($args_val, $this->columns)) ? ($row_data[($this->check_cType()) ? $args_val : array_search($args_val, $this->columns)]) : $args_val;
 
@@ -674,19 +699,30 @@
 		}
 
 		/**
-		 * Check column type -numeric or column name
+		 * Check column type -> numeric or column name
+		 *
+		 * @since 2.0.1 Added caching to $column to prevent calling CodeIgniter's XSS-protection over and over
+		 * @since 2.0.0
 		 *
 		 * @return bool
 		 */
 
 		private function check_cType() {
 
-			$column = $this->ci->input->post('columns');
+			static $column;
+
+			if (is_null($column)) {
+				$column	= $this->ci->input->post('columns');
+			}
 
 			if (is_numeric($column[0]['data'])) {
+
 				return false;
+
 			} else {
+
 				return true;
+
 			}
 
 		}
@@ -694,18 +730,18 @@
 		/**
 		 * Return the difference of open and close characters
 		 *
-		 * @param  string $str
-		 * @param  string $open
-		 * @param  string $close
-		 * @return string $retval
+		 * @param string $str
+		 * @param string $open
+		 * @param string $close
+		 * @return int $retval
 		 */
 
 		private function balanceChars($str, $open, $close) {
 
-			$openCount = substr_count($str, $open);
-			$closeCount = substr_count($str, $close);
+			$openCount	= substr_count($str, $open);
+			$closeCount	= substr_count($str, $close);
 
-			$retval = $openCount - $closeCount;
+			$retval		= $openCount - $closeCount;
 
 			return $retval;
 
@@ -714,36 +750,38 @@
 		/**
 		 * Explode, but ignore delimiter until closing characters are found
 		 *
-		 * @param  string $delimiter
-		 * @param  string $str
-		 * @param  string $open
-		 * @param  string $close
-		 * @return mixed  $retval
+		 * @param string $delimiter
+		 * @param string $str
+		 * @param string $open
+		 * @param string $close
+		 * @return mixed $retval
 		 */
 
 		private function explode($delimiter, $str, $open = '(', $close=')') {
 
-			$retval = array();
-			$hold = array();
-			$balance = 0;
-			$parts = explode($delimiter, $str);
+			$retval		= array();
+			$hold		= array();
+			$balance	= 0;
+			$parts		= explode($delimiter, $str);
 
 			foreach ($parts as $part) {
 
-				$hold[] = $part;
-				$balance += $this->balanceChars($part, $open, $close);
+				$hold[]		= $part;
+				$balance	+= $this->balanceChars($part, $open, $close);
 
 				if ($balance < 1) {
-					$retval[] = implode($delimiter, $hold);
-					$hold = array();
-					$balance = 0;
+
+					$retval[]	= implode($delimiter, $hold);
+					$hold		= array();
+					$balance	= 0;
+
 				}
 
 			}
 
 			if (count($hold) > 0) {
 
-				$retval[] = implode($delimiter, $hold);
+				$retval[]	= implode($delimiter, $hold);
 
 			}
 
@@ -754,7 +792,7 @@
 		/**
 		 * Workaround for json_encode's UTF-8 encoding if a different charset needs to be used
 		 *
-		 * @param  mixed  $result
+		 * @param mixed $result
 		 * @return string
 		 */
 
@@ -775,14 +813,16 @@
 			if (is_scalar($result)) {
 
 				if (is_float($result)) {
+
 					return floatval(str_replace(',', '.', strval($result)));
+
 				}
 
 				if (is_string($result)) {
 
-					static $jsonReplaces = array(array('\\', '/', '\n', '\t', '\r', '\b', '\f', '"'), array('\\\\', '\\/', '\\n', '\\t', '\\r', '\\b', '\\f', '\"'));
+					static $jsonReplaces	= array(array('\\', '/', '\n', '\t', '\r', '\b', '\f', '"'), array('\\\\', '\\/', '\\n', '\\t', '\\r', '\\b', '\\f', '\"'));
 
-					return '"' . str_replace($jsonReplaces[0], $jsonReplaces[1], $result) . '"';
+					return '"'.str_replace($jsonReplaces[0], $jsonReplaces[1], $result).'"';
 
 				} else {
 
@@ -792,13 +832,13 @@
 
 			}
 
-			$isList = true;
+			$isList		= true;
 
-			for ($i = 0, reset($result); $i < count($result); $i++, next($result)) {
+			for ($i=0, reset($result); $i<count($result); $i++, next($result)) {
 
 				if (key($result) !== $i) {
 
-					$isList = false;
+					$isList	= false;
 
 					break;
 
@@ -806,36 +846,41 @@
 
 			}
 
-			$json = array();
+			$json	= array();
 
 			if ($isList) {
 
 				foreach ($result as $value) {
-					$json[] = $this->jsonify($value);
+
+					$json[]		= $this->jsonify($value);
+
 				}
 
-				return '[' . join(',', $json) . ']';
+				return '['.join(',', $json).']';
 
 			} else {
 
 				foreach ($result as $key => $value) {
-					$json[] = $this->jsonify($key) . ':' . $this->jsonify($value);
+
+					$json[]		= $this->jsonify($key).':'.$this->jsonify($value);
+
 				}
 
-				return '{' . join(',', $json) . '}';
+				return '{'.join(',', $json).'}';
 
 			}
 
 		}
 
 		/**
-		* returns the sql statement of the last query run
-		* @return type
-		*/
+		 * Returns the sql statement of the last query run
+		 *
+		 * @return type
+		 */
 
 		public function last_query() {
 
-			return  $this->ci->db->last_query();
+			return $this->ci->db->last_query();
 
 		}
 
