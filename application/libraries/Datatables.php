@@ -136,7 +136,8 @@
 		 */
 
 		public function from($table) {
-
+			
+			$this->ci->db->from($table);								// Issue #78, fix by oobi
 			$this->table			= $table;
 
 			return $this;
@@ -339,7 +340,7 @@
 
 		public function unset_column($column) {
 
-			$column				= explode(',', $column);
+			$column				= array_flip(explode(',', $column));			// Issue #66, fix by ajindam 
 			$this->unset_columns		= array_merge($this->unset_columns, $column);
 
 			return $this;
@@ -356,14 +357,14 @@
 
 		public function generate($output = 'json', $charset = 'UTF-8') {
 
-			if (strtolower($output) == 'json') {
+			if (trim(strtolower($output)) == 'json') {
 				$this->get_paging();
 			}
 
 			$this->get_ordering();
 			$this->get_filtering();
 
-			return $this->produce_output(strtolower($output), strtolower($charset));
+			return $this->produce_output($output, $charset);
 
 		}
 
@@ -473,7 +474,7 @@
 
 		private function get_display_result() {
 
-			return $this->ci->db->get($this->table);
+			return $this->ci->db->get();								// Issue #78, fix by oobi
 
 		}
 
@@ -487,27 +488,31 @@
 
 		private function produce_output($output, $charset) {
 
-			$aaData = array();
-			$rResult = $this->get_display_result();
+			$aaData		= array();
+			$output		= trim(strtolower($output));
+			$charset	= trim(strtolower($charset));
+			$rResult	= $this->get_display_result();
 
 			if ($output == 'json') {
-				$iTotal = $this->get_total_results();
-				$iFilteredTotal = $this->get_total_results(true);
+				
+				$iTotal		= $this->get_total_results();
+				$iFilteredTotal	= $this->get_total_results(true);
+				
 			}
 
 			foreach ($rResult->result_array() as $row_key => $row_val) {
 
-				$aaData[$row_key] =  ($this->check_cType()) ? $row_val : array_values($row_val);
+				$aaData[$row_key]	= ($this->check_cType()) ? $row_val : array_values($row_val);
 
 				foreach ($this->add_columns as $field => $val) {
 
 					if ($this->check_cType()) {
 
-						$aaData[$row_key][$field] = $this->exec_replace($val, $aaData[$row_key]);
+						$aaData[$row_key][$field]	= $this->exec_replace($val, $aaData[$row_key]);
 
 					} else {
 
-						$aaData[$row_key][] = $this->exec_replace($val, $aaData[$row_key]);
+						$aaData[$row_key][]		= $this->exec_replace($val, $aaData[$row_key]);
 
 					}
 
@@ -518,17 +523,17 @@
 
 					foreach ($modval as $val) {
 
-						$aaData[$row_key][($this->check_cType()) ? $modkey : array_search($modkey, $this->columns)] = $this->exec_replace($val, $aaData[$row_key]);
+						$aaData[$row_key][($this->check_cType()) ? $modkey : array_search($modkey, $this->columns)]	= $this->exec_replace($val, $aaData[$row_key]);
 
 					}
 
 				}
 
-				$aaData[$row_key] = array_diff_key($aaData[$row_key], ($this->check_cType()) ? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
+				$aaData[$row_key]	= array_diff_key($aaData[$row_key], ($this->check_cType()) ? $this->unset_columns : array_intersect($this->columns, $this->unset_columns));
 
 				if (!$this->check_cType()) {
 
-					$aaData[$row_key] = array_values($aaData[$row_key]);
+					$aaData[$row_key]	= array_values($aaData[$row_key]);
 
 				}
 
@@ -568,6 +573,9 @@
 				$this->get_filtering();
 			}
 
+			// Set FROM early so table aliases are respected - Issue #78, fix by oobi
+			$this->ci->db->from($this->table);
+    
 			foreach ($this->joins as $val) {
 				$this->ci->db->join($val['table'], $val['cond'], $val['type'], $val['escape']);
 			}
@@ -601,7 +609,7 @@
 				$this->ci->db->select($this->columns);
 			}
 
-			$query = $this->ci->db->get($this->table, null, null, false);
+			$query = $this->ci->db->get(null, null, null, false);
 
 			return $query->num_rows();
 
@@ -617,42 +625,45 @@
 
 		private function exec_replace($custom_val, $row_data) {
 
-			$replace_string = '';
+			$replace_string			= '';
 
 			// Go through our array backwards, else $1 (foo) will replace $11, $12 etc with foo1, foo2 etc
-			$custom_val['replacement'] = array_reverse($custom_val['replacement'], true);
+			$custom_val['replacement']	= array_reverse($custom_val['replacement'], true);
 
 			if (isset($custom_val['replacement']) && is_array($custom_val['replacement'])) {
 
 				//Added this line because when the replacement has over 10 elements replaced the variable "$1" first by the "$10"
-				$custom_val['replacement'] = array_reverse($custom_val['replacement'], true);
+				$custom_val['replacement']	= array_reverse($custom_val['replacement'], true);
 
 				foreach ($custom_val['replacement'] as $key => $val) {
 
-					$sval = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
+					$sval			= preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($val));
 
 					if (preg_match('/(\w+::\w+|\w+)\((.*)\)/i', $val, $matches) && is_callable($matches[1])) {
 
-						$func = $matches[1];
-						$args = preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+						$func			= $matches[1];
+						$args			= preg_split("/[\s,]*\\\"([^\\\"]+)\\\"[\s,]*|" . "[\s,]*'([^']+)'[\s,]*|" . "[,]+/", $matches[2], 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
 						foreach ($args as $args_key => $args_val) {
-							$args_val = preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($args_val));
-							$args[$args_key] = (in_array($args_val, $this->columns)) ? ($row_data[($this->check_cType()) ? $args_val : array_search($args_val, $this->columns)]) : $args_val;
+							
+							$args_val		= preg_replace("/(?<!\w)([\'\"])(.*)\\1(?!\w)/i", '$2', trim($args_val));
+							$args[$args_key]	= (in_array($args_val, $this->columns)) ? ($row_data[($this->check_cType()) ? $args_val : array_search($args_val, $this->columns)]) : $args_val;
+
 						}
 
-						$replace_string = call_user_func_array($func, $args);
+						$replace_string		= call_user_func_array($func, $args);
 
 					} elseif (in_array($sval, $this->columns)) {
 
-						$replace_string = $row_data[($this->check_cType()) ? $sval : array_search($sval, $this->columns)];
+						$replace_string		= $row_data[($this->check_cType()) ? $sval : array_search($sval, $this->columns)];
 
 					} else {
 
-						$replace_string = $sval;
+						$replace_string		= $sval;
+
 					}
 
-					$custom_val['content'] = str_ireplace('$' . ($key + 1), $replace_string, $custom_val['content']);
+					$custom_val['content']	= str_ireplace('$'.($key + 1), $replace_string, $custom_val['content']);
 
 				}
 
