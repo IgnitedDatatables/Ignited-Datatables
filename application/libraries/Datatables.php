@@ -29,6 +29,7 @@
 		private $table;
 		private $distinct;
 		private $count_column;
+		private $calc_total	= false;
 		private $group_by	= array();
 		private $select		= array();
 		private $joins		= array();
@@ -50,6 +51,28 @@
 		public function __construct() {
 
 			$this->ci	=& get_instance();
+
+		}
+
+		/**
+		 * If calc_total is TRUE, the class queries the number of records twice.
+		 * Once without filtering (recordsTotal) and once with filtering (recordsFiltered).
+		 * Usually, recordsTotal is used to display something like "Showing 1 to 20 of 3000 entries (filtered from 10000 total entries)"
+		 * If you aren't interested in the "(filtered from 10000 total entries)"-part, set calc_total to FALSE and it will set recordsTotal to 
+		 * the same value as recordsFiltered.
+		 *
+		 * Default is FALSE because it can have a huge negative performance impact if you set it to TRUE.
+		 *
+		 * @since 2.0.1
+		 *
+		 * @param bool $calc_total
+		 * @return mixed
+		 */
+
+		public function set_calc_total($calc_total = false) {
+
+			$this->calc_total	= $calc_total;
+			return $this;
 
 		}
 
@@ -429,7 +452,7 @@
 
 		private function get_ordering() {
 
-			$Data	= $this->ci->input->post('columns');
+			$data	= $this->ci->input->post('columns');
 
 			if ($this->ci->input->post('order')) {
 
@@ -437,7 +460,7 @@
 
 					if ($this->check_cType()) {
 
-						$this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
+						$this->ci->db->order_by($data[$key['column']]['data'], $key['dir']);
 
 					} else {
 
@@ -528,6 +551,8 @@
 		 */
 
 		private function produce_output($output, $charset) {
+			
+			// Initialize Variables
 
 			$aaData		= array();
 			$output		= trim(strtolower($output));
@@ -535,11 +560,20 @@
 			$rResult	= $this->get_display_result();
 
 			if ($output == 'json') {
+				
+				// Count records if necessary
 
-				$iTotal		= $this->get_total_results();
 				$iFilteredTotal	= $this->get_total_results(true);
 
+				if ($this->calc_total === true) {
+					$iTotal		= $this->get_total_results();
+				} else {
+					$iTotal		= $iFilteredTotal;
+				}
+
 			}
+			
+			// Process return-data
 
 			foreach ($rResult->result_array() as $row_key => $row_val) {
 
@@ -614,12 +648,12 @@
 
 		private function get_total_results($filtering = false) {
 
+			// Set FROM early so table aliases are respected - Issue #78, fix by oobi
+			$this->ci->db->from($this->table);
+
 			if ($filtering) {
 				$this->get_filtering();
 			}
-
-			// Set FROM early so table aliases are respected - Issue #78, fix by oobi
-			$this->ci->db->from($this->table);
 
 			foreach ($this->joins as $val) {
 				$this->ci->db->join($val['table'], $val['cond'], $val['type'], $val['escape']);
