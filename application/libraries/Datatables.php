@@ -28,6 +28,7 @@
 		private $ci;
 		private $table;
 		private $distinct;
+		private $count_column;
 		private $group_by	= array();
 		private $select		= array();
 		private $joins		= array();
@@ -314,6 +315,21 @@
 		}
 
 		/**
+		 * Sets the column used for counting improving performance
+		 *
+		 * @param string $column
+		 * @return mixed
+		 */
+
+		public function set_count_column($column) {
+
+			$this->count_column	= $column;
+
+			return $this;
+
+		}
+
+		/**
 		 * Sets additional column variables for adding custom columns
 		 *
 		 * @since 2.0.1 Changed all variable names and switched to meaningful array-keys
@@ -588,6 +604,10 @@
 		/**
 		 * Get result count
 		 *
+		 * @since 2.0.1 First attempt at fixing the poor performance for big tables.
+		 *              Takes some ideas from https://github.com/IgnitedDatatables/Ignited-Datatables/pull/122 and
+		 *              https://github.com/IgnitedDatatables/Ignited-Datatables/pull/94
+		 *
 		 * @param  mixed   $filtering
 		 * @return integer
 		 */
@@ -630,13 +650,36 @@
 			}
 
 			if (strlen($this->distinct) > 0) {
+
 				$this->ci->db->distinct($this->distinct);
-				$this->ci->db->select($this->columns);
-			}
+				$this->ci->db->select($this->select);
 
-			$query = $this->ci->db->get(null, null, null, false);
+			} else {
+				
+				if (strlen($this->count_column) > 0) {
+					
+					$this->ci->db->select('COUNT('.$this->count_column.') AS num_rows');
+					$query	= $this->ci->db->get(null, null, null, false);
+					$res	= $query->result();
+					
+					return $res[0]->num_rows;
 
-			return $query->num_rows();
+				} else {
+
+					$this->ci->db->select($this->select);
+				
+				}
+
+
+			}			
+			
+			$subquery	= $this->ci->db->get_compiled_select();
+			$countingsql	= "SELECT COUNT(*) FROM (" . $subquery . ") SqueryAux";
+			$query		= $this->ci->db->query($countingsql);
+			$result		= $query->row_array();
+			$count		= $result['COUNT(*)'];
+			
+			return $count;
 
 		}
 
