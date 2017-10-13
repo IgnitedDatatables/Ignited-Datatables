@@ -28,19 +28,19 @@
 		private $ci;
 		private $table;
 		private $distinct;
-		private $group_by       = array();
-		private $select         = array();
-		private $joins          = array();
-		private $columns        = array();
-		private $where          = array();
-		private $or_where       = array();
-		private $where_in       = array();
-		private $like           = array();
-		private $or_like        = array();
-		private $filter         = array();
-		private $add_columns    = array();
-		private $edit_columns   = array();
-		private $unset_columns  = array();
+		private $group_by	= array();
+		private $select		= array();
+		private $joins		= array();
+		private $columns	= array();
+		private $where		= array();
+		private $or_where	= array();
+		private $where_in	= array();
+		private $like		= array();
+		private $or_like	= array();
+		private $filter		= array();
+		private $add_columns	= array();
+		private $edit_columns	= array();
+		private $unset_columns	= array();
 
 		/**
 		 * Copies an instance of CI
@@ -70,16 +70,16 @@
 		 * Generates the SELECT portion of the query
 		 *
 		 * @param string $columns
-		 * @param bool $backtick_protect
+		 * @param bool $escape
 		 * @return mixed
 		 */
 
-		public function select($columns, $backtick_protect = true) {
+		public function select($columns, $escape = true) {
 
 			foreach ($this->explode(',', $columns) as $val) {
 
 				$column			= trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$2', $val));
-				$column			= preg_replace('/.*\.(.*)/i', '$1', $column); // get name after `.`
+				$column			= preg_replace('/.*\.(.*)/i', '$1', $column);			// get name after `.`
 
 				$this->columns[]	=  $column;
 
@@ -87,7 +87,7 @@
 
 			}
 
-			$this->ci->db->select($columns, $backtick_protect);
+			$this->ci->db->select($columns, $escape);
 
 			return $this;
 
@@ -112,14 +112,17 @@
 		/**
 		 * Generates a custom GROUP BY portion of the query
 		 *
-		 * @param string $val
+		 * @param string $value
+		 * @param bool $escape
 		 * @return mixed
 		 */
 
-		public function group_by($val) {
+		public function group_by($value, $escape = true) {
 
-			$this->group_by[]		= $val;
-			$this->ci->db->group_by($val);
+			$this->group_by[]	= array('value'		=> $value, 
+							'escape'	=> $escape);
+
+			$this->ci->db->group_by($value, $escape);
 
 			return $this;
 
@@ -134,7 +137,7 @@
 
 		public function from($table) {
 
-			$this->table = $table;
+			$this->table			= $table;
 
 			return $this;
 
@@ -143,16 +146,21 @@
 		/**
 		 * Generates the JOIN portion of the query
 		 *
-		 * @param  string $table
-		 * @param  string $fk
-		 * @param  string $type
+		 * @param string $table
+		 * @param string $cond
+		 * @param string $type
+		 * @param null|mixed $escape
 		 * @return mixed
 		 */
 
-		public function join($table, $fk, $type = null) {
+		public function join($table, $cond, $type = null, $escape = null) {
 
-			$this->joins[] = array($table, $fk, $type);
-			$this->ci->db->join($table, $fk, $type);
+			$this->joins[]		= array('table'		=> $table, 
+							'cond'		=> $cond, 
+							'type'		=> $type, 
+							'escape'	=> $escape);
+
+			$this->ci->db->join($table, $cond, $type, $escape);
 
 			return $this;
 
@@ -161,16 +169,19 @@
 		/**
 		 * Generates the WHERE portion of the query
 		 *
-		 * @param  mixed  $key_condition
-		 * @param  string $val
-		 * @param  bool   $backtick_protect
+		 * @param mixed $key
+		 * @param string $value
+		 * @param bool $escape
 		 * @return mixed
 		 */
 
-		public function where($key_condition, $val = null, $backtick_protect = true) {
+		public function where($key, $value = null, $escape = true) {
 
-			$this->where[] = array($key_condition, $val, $backtick_protect);
-			$this->ci->db->where($key_condition, $val, $backtick_protect);
+			$this->where[]		= array('key'		=> $key,
+							'value'		=> $value, 
+							'escape'	=> $escape);
+						
+			$this->ci->db->where($key, $value, $escape);
 
 			return $this;
 
@@ -179,34 +190,40 @@
 		/**
 		 * Generates the WHERE portion of the query
 		 *
-		 * @param  mixed  $key_condition
-		 * @param  string $val
-		 * @param  bool   $backtick_protect
+		 * @param mixed $key
+		 * @param string $value
+		 * @param bool $escape
 		 * @return mixed
 		 */
 
-		public function or_where($key_condition, $val = null, $backtick_protect = true) {
+		public function or_where($key, $value = null, $escape = true) {
 
-			$this->or_where[] = array($key_condition, $val, $backtick_protect);
-			$this->ci->db->or_where($key_condition, $val, $backtick_protect);
+			$this->or_where[]	= array('key'		=> $key,
+							'value'		=> $value, 
+							'escape'	=> $escape);
+						
+			$this->ci->db->or_where($key, $value, $escape);
 
 			return $this;
 
 		}
 
 		/**
-		* Generates the WHERE IN portion of the query
-		*
-		* @param  mixed  $key_condition
-		* @param  string $val
-		* @param  bool   $backtick_protect
-		* @return mixed
-		*/
+		 * Generates the WHERE IN portion of the query
+		 *
+		 * @param mixed $key
+		 * @param string $value
+		 * @param bool $escape
+		 * @return mixed
+		 */
 
-		public function where_in($key_condition, $val = null) {
+		public function where_in($key, $value = null, $escape = true) {
 
-			$this->where_in[] = array($key_condition, $val);
-			$this->ci->db->where_in($key_condition, $val);
+			$this->where_in[]	= array('key'		=> $key,
+							'value'		=> $value, 
+							'escape'	=> $escape);
+							
+			$this->ci->db->where_in($key, $value, $escape);
 
 			return $this;
 
@@ -215,34 +232,40 @@
 		/**
 		 * Generates the WHERE portion of the query
 		 *
-		 * @param  mixed  $key_condition
-		 * @param  string $val
-		 * @param  bool   $backtick_protect
+		 * @param mixed $key
+		 * @param string $value
+		 * @param bool $escape
 		 * @return mixed
 		 */
 
-		public function filter($key_condition, $val = null, $backtick_protect = true) {
+		public function filter($key, $value = null, $escape = true) {
 
-			$this->filter[] = array($key_condition, $val, $backtick_protect);
+			$this->filter[]		= array('key'		=> $key,
+							'value'		=> $value, 
+							'escape'	=> $escape);
 
 			return $this;
 
 		}
 
 		/**
-		* Generates a %LIKE% portion of the query
-		*
-		* @param  mixed  $key_condition
-		* @param  string $val
-		* @param  bool   $backtick_protect
-		* @param  mixed  $side
-		* @return mixed
-		*/
+		 * Generates a %LIKE% portion of the query
+		 *
+		 * @param mixed $field
+		 * @param string $match
+		 * @param mixed $side
+		 * @param bool $escape
+		 * @return mixed
+		 */
 
-		public function like($key_condition, $val = null, $side = 'both') {
+		public function like($field, $match = '', $side = 'both', $escape = NULL) {
 
-			$this->like[] = array($key_condition, $val, $side);
-			$this->ci->db->like($key_condition, $val, $side);
+			$this->like[]		= array('field'		=> $field, 
+							'match'		=> $match, 
+							'side'		=> $side, 
+							'escape'	=> $escape);
+							
+			$this->ci->db->like($field, $match, $side, $escape);
 
 			return $this;
 
@@ -251,17 +274,21 @@
 		/**
 		 * Generates the OR %LIKE% portion of the query
 		 *
-		 * @param  mixed  $key_condition
-		 * @param  string $val
-		 * @param  bool   $backtick_protect
-		 * @param  mixed  $side
+		 * @param mixed $field
+		 * @param string $match
+		 * @param mixed $side
+		 * @param bool $escape
 		 * @return mixed
 		 */
 
-		public function or_like($key_condition, $val = null, $side = 'both') {
+		public function or_like($field, $match = '', $side = 'both', $escape = NULL) {
 
-			$this->or_like[] = array($key_condition, $val, $side);
-			$this->ci->db->or_like($key_condition, $val, $side);
+			$this->or_like[]	= array('field'		=> $field, 
+							'match'		=> $match, 
+							'side'		=> $side, 
+							'escape'	=> $escape);
+							
+			$this->ci->db->or_like($field, $match, $side, $escape);
 
 			return $this;
 
@@ -270,15 +297,16 @@
 		/**
 		 * Sets additional column variables for adding custom columns
 		 *
-		 * @param  string $column
-		 * @param  string $content
-		 * @param  string $match_replacement
+		 * @param string $column
+		 * @param string $content
+		 * @param mixed $match_replacement
 		 * @return mixed
 		 */
 
 		public function add_column($column, $content, $match_replacement = null) {
 
-			$this->add_columns[$column] = array('content' => $content, 'replacement' => $this->explode(',', $match_replacement));
+			$this->add_columns[$column]	= array('content'	=> $content,
+								'replacement'	=> $this->explode(',', $match_replacement)	);
 
 			return $this;
 
@@ -287,15 +315,16 @@
 		/**
 		 * Sets additional column variables for editing columns
 		 *
-		 * @param  string $column
-		 * @param  string $content
-		 * @param  string $match_replacement
+		 * @param string $column
+		 * @param string $content
+		 * @param mixed $match_replacement
 		 * @return mixed
 		 */
 
 		public function edit_column($column, $content, $match_replacement) {
 
-			$this->edit_columns[$column][] = array('content' => $content, 'replacement' => $this->explode(',', $match_replacement));
+			$this->edit_columns[$column][]	= array('content'	=> $content,
+								'replacement'	=> $this->explode(',', $match_replacement)	);
 
 			return $this;
 
@@ -310,8 +339,8 @@
 
 		public function unset_column($column) {
 
-			$column	= explode(',', $column);
-			$this->unset_columns=array_merge($this->unset_columns, $column);
+			$column				= explode(',', $column);
+			$this->unset_columns		= array_merge($this->unset_columns, $column);
 
 			return $this;
 
@@ -431,7 +460,7 @@
 			// TODO : sRangeSeparator
 
 			foreach ($this->filter as $val) {
-				$this->ci->db->where($val[0], $val[1], $val[2]);
+				$this->ci->db->where($val['key'], $val['value'], $val['escape']);
 			}
 
 		}
@@ -540,31 +569,31 @@
 			}
 
 			foreach ($this->joins as $val) {
-				$this->ci->db->join($val[0], $val[1], $val[2]);
+				$this->ci->db->join($val['table'], $val['cond'], $val['type'], $val['escape']);
 			}
 
 			foreach ($this->where as $val) {
-				$this->ci->db->where($val[0], $val[1], $val[2]);
+				$this->ci->db->where($val['key'], $val['value'], $val['escape']);
 			}
 
 			foreach ($this->or_where as $val) {
-				$this->ci->db->or_where($val[0], $val[1], $val[2]);
+				$this->ci->db->or_where($val['key'], $val['value'], $val['escape']);
 			}
 
 			foreach ($this->where_in as $val) {
-				$this->ci->db->where_in($val[0], $val[1]);
+				$this->ci->db->where_in($val['key'], $val['value'], $val['escape']);
 			}
 
 			foreach ($this->group_by as $val) {
-				$this->ci->db->group_by($val);
+				$this->ci->db->group_by($val['value'], $val['escape']);
 			}
 
 			foreach ($this->like as $val) {
-				$this->ci->db->like($val[0], $val[1], $val[2]);
+				$this->ci->db->like($val['field'], $val['match'], $val['side'], 'escape');
 			}
 
 			foreach ($this->or_like as $val) {
-				$this->ci->db->or_like($val[0], $val[1], $val[2]);
+				$this->ci->db->or_like($val['field'], $val['match'], $val['side'], 'escape');
 			}
 
 			if (strlen($this->distinct) > 0) {
