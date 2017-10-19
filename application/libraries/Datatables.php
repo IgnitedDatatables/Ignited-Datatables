@@ -43,6 +43,7 @@
 		private $add_columns	= array();
 		private $edit_columns	= array();
 		private $unset_columns	= array();
+		private $oselect	= '';
 
 		/**
 		 * Copies an instance of CI
@@ -114,6 +115,7 @@
 			}
 
 			$this->ci->db->select($columns, $escape);
+			$this->oselect	= $columns;
 
 			return $this;
 
@@ -593,7 +595,6 @@
 
 				}
 
-
 				foreach ($this->edit_columns as $modkey => $modval) {
 
 					foreach ($modval as $val) {
@@ -686,7 +687,7 @@
 			if (strlen($this->distinct) > 0) {
 
 				$this->ci->db->distinct($this->distinct);
-				$this->ci->db->select($this->select);
+				$this->ci->db->select($this->oselect);
 
 			} else {
 				
@@ -700,7 +701,7 @@
 
 				} else {
 
-					$this->ci->db->select($this->select);
+					$this->ci->db->select($this->oselect);
 				
 				}
 
