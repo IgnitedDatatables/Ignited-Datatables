@@ -460,7 +460,7 @@ class Datatables
             $this->limit = "LIMIT 250"; // workaround memory limit error in pdo
         }
 
-        $this->length = (int) $this->params['length'];
+        $this->length = (int)$this->params['length'];
     }
 
     /**
@@ -566,7 +566,13 @@ class Datatables
                                     $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
                                 }
                             } else {
-                                if ((is_numeric($sSearch) || $this->validateDate($sSearch)) && $this->params['columns'][$i + $this->offset]['type'] == 'date') {
+                                // db2 doesn't like comparing LIKE with dates, see our prep work above for this
+                                $isDate = $this->validateDate($sSearch);
+
+                                if ((is_numeric($sSearch) || $isDate) && $this->params['columns'][$i + $this->offset]['type'] == 'date') {
+                                    $sSearch = str_replace("/", "", $sSearch);
+                                    $sSearch = str_replace("-", "", $sSearch);
+
                                     if ($this->check_cType()) {
                                         $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
                                         $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
@@ -574,15 +580,16 @@ class Datatables
                                         $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
                                         $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
                                     }
-                                } else {
-                                    if ($this->params['columns'][$i + $this->offset]['type'] != 'date') {
-                                        if ($this->check_cType()) {
-                                            $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
-                                            $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " = '" . $sSearch . "' OR ";
-                                        } else {
-                                            $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
-                                            $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " = '" . $sSearch . "' OR ";
-                                        }
+                                }
+
+                                // if numeric we still can search our non date columns for matches
+                                if (!$isDate && $this->params['columns'][$i + $this->offset]['type'] != 'date') {
+                                    if ($this->check_cType()) {
+                                        $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
+                                        $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " = '" . $sSearch . "' OR ";
+                                    } else {
+                                        $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
+                                        $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " = '" . $sSearch . "' OR ";
                                     }
                                 }
                             }
