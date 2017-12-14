@@ -10,18 +10,13 @@ error_reporting(0);
  * This is a wrapper class/library based on the native Datatables server-side implementation by Allan Jardine
  * found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter
  *
- * This version includes preliminary but working support for iSeries/DB2 databases and query speed/logical 
- * improvements over former versions.
- *
  * @package    CodeIgniter
  * @subpackage libraries
  * @category   library
- * @version    2.1
+ * @version    2.0 <beta>
  * @author     Vincent Bambico <metal.conspiracy@gmail.com>
  *             Yusuf Ozdemir <yusuf@ozdemir.be>
- *             Matt Parnell <mparnell@dmp.com>
  * @link       http://ellislab.com/forums/viewthread/160896/
- * @link       https://github.com/IgnitedDatatables/Ignited-Datatables
  */
 class Datatables
 {
@@ -65,9 +60,9 @@ class Datatables
         $this->ci =& get_instance();
 
         if (!empty($config['transport']) && $config['transport'] == 'GET') {
-            $this->params = $this->ci->input->get();
+            $this->params = $this->ci->input->get(null, false);
         } else {
-            $this->params = $this->ci->input->post();
+            $this->params = $this->ci->input->post(null, false);
         }
         $this->transport = $config['transport'];
 
@@ -76,7 +71,9 @@ class Datatables
         }
 
         if ($config['db2']) {
-            $this->isDb2 = TRUE;
+            $this->isDb2 = TRUE; // requires explicit call to set_database for now
+        } else {
+            $this->db = &$this->ci->db;
         }
 
         if (ENVIRONMENT != 'production') {
@@ -96,8 +93,6 @@ class Datatables
         if (isset($config['fullstop'])) {
             $this->fullstop = $config['fullstop'];
         }
-
-        $this->db = $this->ci->db;
     }
 
     /**
@@ -105,7 +100,7 @@ class Datatables
      * set the database (other than $active_group) - more info: http://ellislab.com/forums/viewthread/145901/#712942
      */
     public function set_database($db_name) {
-        $this->db = $this->ci->load->database($db_name, true);
+        $this->db = &$this->ci->load->database($db_name, true);
     }
 
     /**
@@ -419,16 +414,13 @@ class Datatables
      * @return mixed
      */
     private function get_paging() {
-        $iStart = $this->params['start'];
-        $iLength = $this->params['length'];
-
-        if ($iLength != '' && $iLength != '-1') {
-            $this->limit = "LIMIT " . $iLength . ($iStart ? ', ' . $iStart : '');
+        if ($this->params['length'] != '' && $this->params['length'] != '-1') {
+            $this->limit = "LIMIT " . (int)$this->params['length'] . ($this->params['start'] ? ', ' . (int)$this->params['start'] : '');
         } elseif ($this->isDb2) {
-            $this->limit = "LIMIT 250";
+            $this->limit = "LIMIT 250"; // workaround memory limit error in pdo
         }
 
-        $this->length = $iLength;
+        $this->length = $this->params['length'];
     }
 
     /**
@@ -437,8 +429,12 @@ class Datatables
      * @return mixed
      */
     private function get_ordering() {
-        $Data = $this->params['columns'];
-        $this->params['order'] = $this->ci->input->post('order');
+        if ($this->transport = "POST") {
+            $this->params['order'] = $this->ci->input->post('order', false);
+        } else {
+            $this->params['order'] = $this->ci->input->get('order', false);
+        }
+
         $orderBy = "";
 
         if (!empty($this->preorder)) {
@@ -464,7 +460,7 @@ class Datatables
                         $orderBy .= ", ";
                     }
 
-                    $orderBy .= " " . $Data[$colIdx]['data'] . " " . $dir;
+                    $orderBy .= " " . $this->params['columns'][$colIdx]['data'] . " " . $dir;
 
                     $i++;
                 }
@@ -483,8 +479,8 @@ class Datatables
      */
     private function get_filtering() {
         if (!$this->noBuiltinSearch && !$this->hasFiltered) {
-            $mColArray = $this->ci->input->post('columns');
             $sWhere = '';
+
             if ($this->transport = "POST") {
                 $search = $this->ci->input->post('search');
             } else {
@@ -505,11 +501,11 @@ class Datatables
                         foreach ($sampleData as $sample) {
                             $i = 0;
                             foreach ($sample as $col) {
-                                if ($col && empty($mColArray[$i]['type'])) {
+                                if ($col && empty($this->params['columns'][$i]['type'])) {
                                     if ($this->validateDate($col)) {
-                                        $mColArray[$i]['type'] = 'date';
+                                        $this->params['columns'][$i]['type'] = 'date';
                                     } else {
-                                        $mColArray[$i]['type'] = 'normal';
+                                        $this->params['columns'][$i]['type'] = 'normal';
                                     }
                                 }
                                 $i++;
@@ -520,29 +516,29 @@ class Datatables
             }
 
             if (!empty($sSearch)) {
-                for ($i = 0; $i < count($mColArray); $i++) {
-                    if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'] + $this->offset, $this->add_columns)) {
+                for ($i = 0; $i < count($this->params['columns']); $i++) {
+                    if ($this->params['columns'][$i]['searchable'] == 'true' && !array_key_exists($this->params['columns'][$i]['data'] + $this->offset, $this->add_columns)) {
                         if (isset($this->columns[$i + $this->offset])) {
                             if (!$this->isDb2) {
                                 if ($this->check_cType()) {
-                                    $sWhere .= $this->select[$mColArray[$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
+                                    $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
                                 } else {
                                     $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
                                 }
                             } else {
-                                if ((is_numeric($sSearch) || $this->validateDate($sSearch)) && $mColArray[$i + $this->offset]['type'] == 'date') {
+                                if ((is_numeric($sSearch) || $this->validateDate($sSearch)) && $this->params['columns'][$i + $this->offset]['type'] == 'date') {
                                     if ($this->check_cType()) {
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$mColArray[$i]['data'] + $this->offset] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$mColArray[$i]['data'] + $this->offset] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
+                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
+                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
                                     } else {
                                         $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
                                         $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
                                     }
                                 } else {
-                                    if ($mColArray[$i + $this->offset]['type'] != 'date') {
+                                    if ($this->params['columns'][$i + $this->offset]['type'] != 'date') {
                                         if ($this->check_cType()) {
-                                            $sWhere .= $this->select[$mColArray[$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
-                                            $sWhere .= $this->select[$mColArray[$i]['data'] + $this->offset] . " = '" . $sSearch . "' OR ";
+                                            $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
+                                            $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " = '" . $sSearch . "' OR ";
                                         } else {
                                             $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
                                             $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " = '" . $sSearch . "' OR ";
@@ -771,14 +767,12 @@ class Datatables
      * @return bool
      */
     private function check_cType() {
-        $column = $this->params['columns'];
-        if (is_numeric($column[0]['data'])) {
+        if (is_numeric($this->params['columns'][0]['data'])) {
             return false;
         } else {
             return true;
         }
     }
-
 
     /**
      * Return the difference of open and close characters
