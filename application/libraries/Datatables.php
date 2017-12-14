@@ -79,7 +79,7 @@ class Datatables
             $this->isDb2 = TRUE;
         }
 
-        if (ENVIRONMENT != 'production' || $_SERVER['REMOTE_ADDR'] == '192.168.259.29') {
+        if (ENVIRONMENT != 'production') {
             if (!empty($config['debug'])) {
                 $this->debug = (bool)$config['debug'];
             }
