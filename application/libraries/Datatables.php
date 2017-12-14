@@ -242,6 +242,14 @@ class Datatables
 
         if (is_string($val)) {
             $val = iconv('UTF-8', 'ASCII//TRANSLIT', $val);
+
+            if ($this->isDb2) {
+                $val = "'" . $val . "'";
+            }
+        }
+
+        if ($this->isDb2) {
+            $backtick_protect = false;
         }
 
         $this->or_where[] = [$key_condition, $val, $backtick_protect];
@@ -264,6 +272,14 @@ class Datatables
 
         if (is_string($val)) {
             $val = iconv('UTF-8', 'ASCII//TRANSLIT', $val);
+
+            if ($this->isDb2) {
+                $val = "'" . $val . "'";
+            }
+        }
+
+        if ($this->isDb2) {
+            $backtick_protect = false;
         }
 
         $this->where_in[] = [$key_condition, $val];
@@ -286,6 +302,14 @@ class Datatables
 
         if (is_string($val)) {
             $val = iconv('UTF-8', 'ASCII//TRANSLIT', $val);
+
+            if ($this->isDb2) {
+                $val = "'" . $val . "'";
+            }
+        }
+
+        if ($this->isDb2) {
+            $backtick_protect = false;
         }
 
         $this->filter[] = [$key_condition, $val, $backtick_protect];
@@ -308,6 +332,14 @@ class Datatables
 
         if (is_string($val)) {
             $val = iconv('UTF-8', 'ASCII//TRANSLIT', $val);
+
+            if ($this->isDb2) {
+                $val = "'" . $val . "'";
+            }
+        }
+
+        if ($this->isDb2) {
+            $backtick_protect = false;
         }
 
         $this->like[] = [$key_condition, $val, $side];
@@ -327,9 +359,17 @@ class Datatables
         if (is_string($key_condition)) {
             $key_condition = iconv('UTF-8', 'ASCII//TRANSLIT', $key_condition);
         }
-
+        
         if (is_string($val)) {
             $val = iconv('UTF-8', 'ASCII//TRANSLIT', $val);
+
+            if ($this->isDb2) {
+                $val = "'" . $val . "'";
+            }
+        }
+
+        if ($this->isDb2) {
+            $backtick_protect = false;
         }
 
         $this->or_like[] = [$key_condition, $val, $side];
