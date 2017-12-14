@@ -531,68 +531,18 @@ class Datatables
                 $sSearch = $this->db->escape_like_str(trim($search['value']));
             } else {
                 $sSearch = $this->db2_escape($search['value']);
-
-                // select a sample of each column
-                // determine the type as date or not since db2 doesn't do LIKE with dates
-                $q = $this->db->query('SELECT ' . implode(",", $this->columns) . " FROM " . $this->table . " LIMIT 10");
-                if ($q) {
-                    $sampleData = $q->result_array();
-                    if ($sampleData) {
-                        foreach ($sampleData as $sample) {
-                            $i = 0;
-                            foreach ($sample as $col) {
-                                if ($col && empty($this->params['columns'][$i]['type'])) {
-                                    if ($this->validateDate($col)) {
-                                        $this->params['columns'][$i]['type'] = 'date';
-                                    } else {
-                                        $this->params['columns'][$i]['type'] = 'normal';
-                                    }
-                                }
-                                $i++;
-                            }
-                        }
-                    }
-                }
             }
 
             if (!empty($sSearch)) {
                 for ($i = 0; $i < count($this->params['columns']); $i++) {
                     if ($this->params['columns'][$i]['searchable'] == 'true' && !array_key_exists($this->params['columns'][$i]['data'] + $this->offset, $this->add_columns)) {
                         if (isset($this->columns[$i + $this->offset])) {
-                            if (!$this->isDb2) {
-                                if ($this->check_cType()) {
-                                    $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
-                                } else {
-                                    $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
-                                }
+                            if ($this->check_cType()) {
+                                $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
                             } else {
-                                // db2 doesn't like comparing LIKE with dates, see our prep work above for this
-                                $isDate = $this->validateDate($sSearch);
-
-                                if ((is_numeric($sSearch) || $isDate) && $this->params['columns'][$i + $this->offset]['type'] == 'date') {
-                                    $tmpsSearch = str_replace("/", "", $sSearch);
-                                    $tmpsSearch = str_replace("-", "", $tmpsSearch);
-
-                                    if ($this->check_cType()) {
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') = '" . $tmpsSearch . "' OR ";
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') LIKE '%" . $tmpsSearch . "%' OR ";
-                                    } else {
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') = '" . $tmpsSearch . "' OR ";
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') LIKE '%" . $tmpsSearch . "%' OR ";
-                                    }
-                                }
-
-                                // if numeric we still can search our non date columns for matches
-                                if (!$isDate && $this->params['columns'][$i + $this->offset]['type'] != 'date') {
-                                    if ($this->check_cType()) {
-                                        $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " LIKE '%" . $sSearch . "%' OR ";
-                                        $sWhere .= $this->select[$this->params['columns'][$i]['data'] + $this->offset] . " = '" . $sSearch . "' OR ";
-                                    } else {
-                                        $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
-                                        $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " = '" . $sSearch . "' OR ";
-                                    }
-                                }
+                                $sWhere .= $this->select[$this->columns[$i + $this->offset]] . " LIKE '%" . $sSearch . "%' OR ";
                             }
+
                         }
                     }
                 }
@@ -960,12 +910,6 @@ class Datatables
                 $return .= '\\x' . dechex($ord);
         }
         return $return;
-    }
-
-    private function validateDate($date) {
-        $date = str_replace("/", "-", $date);
-        $d = DateTime::createFromFormat('Y-m-d', $date);
-        return $d && $d->format('Y-m-d') === $date;
     }
 }
 /* End of file Datatables.php */
