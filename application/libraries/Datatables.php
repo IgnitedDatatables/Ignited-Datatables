@@ -570,15 +570,15 @@ class Datatables
                                 $isDate = $this->validateDate($sSearch);
 
                                 if ((is_numeric($sSearch) || $isDate) && $this->params['columns'][$i + $this->offset]['type'] == 'date') {
-                                    $sSearch = str_replace("/", "", $sSearch);
-                                    $sSearch = str_replace("-", "", $sSearch);
+                                    $tmpsSearch = str_replace("/", "", $sSearch);
+                                    $tmpsSearch = str_replace("-", "", $tmpsSearch);
 
                                     if ($this->check_cType()) {
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
+                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') = '" . $tmpsSearch . "' OR ";
+                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->params['columns'][$i]['data'] + $this->offset] . ", 'YYYYMMDD') LIKE '%" . $tmpsSearch . "%' OR ";
                                     } else {
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') = '" . $sSearch . "' OR ";
-                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') LIKE '%" . $sSearch . "%' OR ";
+                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') = '" . $tmpsSearch . "' OR ";
+                                        $sWhere .= "VARCHAR_FORMAT(" . $this->select[$this->columns[$i + $this->offset]] . ", 'YYYYMMDD') LIKE '%" . $tmpsSearch . "%' OR ";
                                     }
                                 }
 
