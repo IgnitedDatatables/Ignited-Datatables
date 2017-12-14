@@ -10,13 +10,18 @@ error_reporting(0);
  * This is a wrapper class/library based on the native Datatables server-side implementation by Allan Jardine
  * found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter
  *
+ * This version includes preliminary but working support for iSeries/DB2 databases and query speed/logical 
+ * improvements over former versions.
+ *
  * @package    CodeIgniter
  * @subpackage libraries
  * @category   library
- * @version    2.0 <beta>
+ * @version    2.1
  * @author     Vincent Bambico <metal.conspiracy@gmail.com>
  *             Yusuf Ozdemir <yusuf@ozdemir.be>
+ *             Matt Parnell <mparnell@dmp.com>
  * @link       http://ellislab.com/forums/viewthread/160896/
+ * @link       https://github.com/IgnitedDatatables/Ignited-Datatables
  */
 class Datatables
 {
