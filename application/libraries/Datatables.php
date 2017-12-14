@@ -359,7 +359,7 @@ class Datatables
         if (is_string($key_condition)) {
             $key_condition = iconv('UTF-8', 'ASCII//TRANSLIT', $key_condition);
         }
-        
+
         if (is_string($val)) {
             $val = iconv('UTF-8', 'ASCII//TRANSLIT', $val);
 
@@ -460,7 +460,7 @@ class Datatables
             $this->limit = "LIMIT 250"; // workaround memory limit error in pdo
         }
 
-        $this->length = $this->params['length'];
+        $this->length = (int) $this->params['length'];
     }
 
     /**
