@@ -24,6 +24,17 @@ Install
 To install the library, copy the libraries/datatables.php file into your application/libraries folder.
 
 =======
+DB2 Notes
+=======
+
+DB2 in regard to datatables is finicky. One caveat of note is that if you're using any date columns, you MUST cast them appropriately as
+chars in your select, ex:
+
+        $data ['results'] = $this->datatables->from('TABLE')->select("COl, COL2,CHAR(DATECOL, USA)")->generate('array');
+		
+You can use USA or UTC in the CHAR() conversion.
+
+=======
 License
 =======
 DON'T BE A DICK PUBLIC LICENSE
