@@ -449,9 +449,12 @@
         $this->ci->db->distinct($this->distinct);
         $this->ci->db->select($this->columns);
       }
-
-      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
-      return $query->num_rows();
+      $subquery = $this->ci->db->get_compiled_select($this->table);
+      $countingsql = "SELECT COUNT(*) FROM (" . $subquery . ") SqueryAux";
+      $query = $this->ci->db->query($countingsql);
+      $result = $query->row_array();
+      $count = $result['COUNT(*)'];
+      return $count;
     }
 
     /**
