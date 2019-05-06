@@ -414,47 +414,44 @@
     }
 
     /**
-    * Get result count
-    *
-    * @return integer
-    */
-    private function get_total_results($filtering = FALSE)
+     * Get result count
+     *
+     * @param bool $filtering
+     * @return integer
+     */
+    private function get_total_results($filtering = false)
     {
-      if($filtering)
-        $this->get_filtering();
+        if ($filtering) {
+            $this->get_filtering();
+        }
 
-      foreach($this->joins as $val)
-        $this->ci->db->join($val[0], $val[1], $val[2]);
+        foreach ($this->joins as $val) {
+            $this->ci->db->join($val[0], $val[1], $val[2]);
+        }
 
-      foreach($this->where as $val)
-        $this->ci->db->where($val[0], $val[1], $val[2]);
+        foreach ($this->where as $val) {
+            $this->ci->db->where($val[0], $val[1], $val[2]);
+        }
 
-      foreach($this->or_where as $val)
-        $this->ci->db->or_where($val[0], $val[1], $val[2]);
-        
-      foreach($this->where_in as $val)
-        $this->ci->db->where_in($val[0], $val[1]);
+        foreach ($this->or_where as $val) {
+            $this->ci->db->or_where($val[0], $val[1], $val[2]);
+        }
 
-      foreach($this->group_by as $val)
-        $this->ci->db->group_by($val);
+        foreach ($this->group_by as $val) {
+            $this->ci->db->group_by($val);
+        }
 
-      foreach($this->like as $val)
-        $this->ci->db->like($val[0], $val[1], $val[2]);
+        foreach ($this->like as $val) {
+            $this->ci->db->like($val[0], $val[1], $val[2]);
+        }
 
-      foreach($this->or_like as $val)
-        $this->ci->db->or_like($val[0], $val[1], $val[2]);
+        if ($this->distinct != '') {
+            $this->ci->db->distinct($this->distinct);
+            $this->ci->db->select($this->columns);
+        }
 
-      if(strlen($this->distinct) > 0)
-      {
-        $this->ci->db->distinct($this->distinct);
-        $this->ci->db->select($this->columns);
-      }
-      $subquery = $this->ci->db->get_compiled_select($this->table);
-      $countingsql = "SELECT COUNT(*) FROM (" . $subquery . ") SqueryAux";
-      $query = $this->ci->db->query($countingsql);
-      $result = $query->row_array();
-      $count = $result['COUNT(*)'];
-      return $count;
+        $this->ci->db->from($this->table);
+        return $this->ci->db->count_all_results();
     }
 
     /**
