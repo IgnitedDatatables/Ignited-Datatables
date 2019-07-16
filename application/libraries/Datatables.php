@@ -157,7 +157,7 @@
       $this->ci->db->or_where($key_condition, $val, $backtick_protect);
       return $this;
     }
-    
+
     /**
     * Generates the WHERE IN portion of the query
     *
@@ -324,13 +324,27 @@
       $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
-      if($sSearch != '')
-        for($i = 0; $i < count($mColArray); $i++)
-          if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'], $this->add_columns))
-            if($this->check_cType())
+      for($i = 0; $i < count($mColArray); $i++){
+        if(!empty($search['value'])){
+          $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
+          if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'], $this->add_columns)){
+            if($this->check_cType()){
               $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $sSearch . "%' OR ";
-            else
+            }else{
               $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+            }
+          }
+        }
+
+        if (!empty($mColArray[$i]['search']['value'])){
+            $cSearch = $this->ci->db->escape_like_str(trim($mColArray[$i]['search']['value']));
+            if($this->check_cType()){
+              $sWhere .= $this->select[$mColArray[$i]['data']] . " LIKE '%" . $cSearch . "%' OR ";
+            }else{
+              $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $cSearch . "%' OR ";
+            }
+        }
+      }
 
 
       $sWhere = substr_replace($sWhere, '', -3);
@@ -431,7 +445,7 @@
 
       foreach($this->or_where as $val)
         $this->ci->db->or_where($val[0], $val[1], $val[2]);
-        
+
       foreach($this->where_in as $val)
         $this->ci->db->where_in($val[0], $val[1]);
 
@@ -449,9 +463,12 @@
         $this->ci->db->distinct($this->distinct);
         $this->ci->db->select($this->columns);
       }
-
-      $query = $this->ci->db->get($this->table, NULL, NULL, FALSE);
-      return $query->num_rows();
+      $subquery = $this->ci->db->get_compiled_select($this->table);
+      $countingsql = "SELECT COUNT(*) FROM (" . $subquery . ") SqueryAux";
+      $query = $this->ci->db->query($countingsql);
+      $result = $query->row_array();
+      $count = $result['COUNT(*)'];
+      return $count;
     }
 
     /**
@@ -464,7 +481,7 @@
     private function exec_replace($custom_val, $row_data)
     {
       $replace_string = '';
-      
+
       // Go through our array backwards, else $1 (foo) will replace $11, $12 etc with foo1, foo2 etc
       $custom_val['replacement'] = array_reverse($custom_val['replacement'], true);
 
@@ -626,7 +643,7 @@
         return '{' . join(',', $json) . '}';
       }
     }
-	
+
 	 /**
      * returns the sql statement of the last query run
      * @return type
