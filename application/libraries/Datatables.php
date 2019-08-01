@@ -22,6 +22,7 @@
     private $ci;
     private $table;
     private $distinct;
+    private $count_column;
     private $group_by       = array();
     private $select         = array();
     private $joins          = array();
@@ -259,6 +260,18 @@
     }
 
     /**
+    * Sets the column used for counting improving performance
+    * 
+    * @param string $column
+    * @return mixed
+    */
+    public function set_count_column($column)
+    {
+      $this->count_column = $column;
+      return $this;
+    }   
+
+    /**
     * Builds all the necessary query segments and performs the main query based on results set from chained statements
     *
     * @param string $output
@@ -422,6 +435,9 @@
     {
       if($filtering)
         $this->get_filtering();
+
+      if(strlen($this->count_column) > 0)
+        $this->ci->db->select($this->count_column);
 
       foreach($this->joins as $val)
         $this->ci->db->join($val[0], $val[1], $val[2]);
@@ -629,8 +645,8 @@
         return '{' . join(',', $json) . '}';
       }
     }
-	
-	 /**
+  
+   /**
      * returns the sql statement of the last query run
      * @return type
      */
