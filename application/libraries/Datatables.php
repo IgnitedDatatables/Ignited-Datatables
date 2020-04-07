@@ -635,6 +635,24 @@
     {
       return  $this->ci->db->last_query();
     }
+
+    /**
+     * Starts a new group by adding an opening parenthesis to the WHERE clause of the query.
+     * @return type
+     */
+    public function group_start()
+    {
+      return  $this->ci->db->group_start();
+    }
+
+    /**
+     * Ends the current group by adding an closing parenthesis to the WHERE clause of the query.
+     * @return type
+     */
+    public function group_end()
+    {
+      return  $this->ci->db ->group_end();
+    }
   }
 /* End of file Datatables.php */
 /* Location: ./application/libraries/Datatables.php */
