@@ -1,18 +1,5 @@
-<?php if(!defined('BASEPATH')) exit('No direct script access allowed');
-  /**
-  * Ignited Datatables
-  *
-  * This is a wrapper class/library based on the native Datatables server-side implementation by Allan Jardine
-  * found at http://datatables.net/examples/data_sources/server_side.html for CodeIgniter
-  *
-  * @package    CodeIgniter
-  * @subpackage libraries
-  * @category   library
-  * @version    2.0 <beta>
-  * @author     Vincent Bambico <metal.conspiracy@gmail.com>
-  *             Yusuf Ozdemir <yusuf@ozdemir.be>
-  * @link       http://ellislab.com/forums/viewthread/160896/
-  */
+<?php namespace App\Libraries;
+
   class Datatables
   {
     /**
@@ -20,6 +7,9 @@
     *
     */
     private $ci;
+    private $db;
+    private $builder;
+    private $request;
     private $table;
     private $distinct;
     private $group_by       = array();
@@ -41,7 +31,10 @@
     */
     public function __construct()
     {
-      $this->ci =& get_instance();
+      $db = \Config\Database::connect();
+
+      $this->db = $db;
+      $this->request = \Config\Services::request();
     }
 
     /**
@@ -50,8 +43,8 @@
     */
     public function set_database($db_name)
     {
-      $db_data = $this->ci->load->database($db_name, TRUE);
-      $this->ci->db = $db_data;
+      $db = \Config\Database::connect($db_name);
+      $this->db = $db;
     }
 
     /**
@@ -71,7 +64,7 @@
         $this->select[$column] =  trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$1', $val));
       }
 
-      $this->ci->db->select($columns, $backtick_protect);
+      $this->builder->select($columns, $backtick_protect);
       return $this;
     }
 
@@ -84,7 +77,7 @@
     public function distinct($column)
     {
       $this->distinct = $column;
-      $this->ci->db->distinct($column);
+      $this->builder->distinct($column);
       return $this;
     }
 
@@ -97,19 +90,20 @@
     public function group_by($val)
     {
       $this->group_by[] = $val;
-      $this->ci->db->group_by($val);
+      $this->builder->groupBy($val);
       return $this;
     }
 
     /**
-    * Generates the FROM portion of the query
+    * Generates the TABLE portion of the query
     *
     * @param string $table
     * @return mixed
     */
-    public function from($table)
+    public function table($table)
     {
-      $this->ci->db->from($table);
+      // $this->builder->table($table);
+      $this->builder = $this->db->table($table);
       $this->table = $table;
       return $this;
     }
@@ -125,7 +119,7 @@
     public function join($table, $fk, $type = NULL)
     {
       $this->joins[] = array($table, $fk, $type);
-      $this->ci->db->join($table, $fk, $type);
+      $this->builder->join($table, $fk, $type);
       return $this;
     }
 
@@ -140,7 +134,7 @@
     public function where($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
       $this->where[] = array($key_condition, $val, $backtick_protect);
-      $this->ci->db->where($key_condition, $val, $backtick_protect);
+      $this->builder->where($key_condition, $val, $backtick_protect);
       return $this;
     }
 
@@ -155,7 +149,7 @@
     public function or_where($key_condition, $val = NULL, $backtick_protect = TRUE)
     {
       $this->or_where[] = array($key_condition, $val, $backtick_protect);
-      $this->ci->db->or_where($key_condition, $val, $backtick_protect);
+      $this->builder->orWhere($key_condition, $val, $backtick_protect);
       return $this;
     }
     
@@ -170,7 +164,7 @@
     public function where_in($key_condition, $val = NULL)
     {
       $this->where_in[] = array($key_condition, $val);
-      $this->ci->db->where_in($key_condition, $val);
+      $this->builder->whereIn($key_condition, $val);
       return $this;
     }
 
@@ -199,7 +193,7 @@
     public function like($key_condition, $val = NULL, $side = 'both')
     {
       $this->like[] = array($key_condition, $val, $side);
-      $this->ci->db->like($key_condition, $val, $side);
+      $this->builder->like($key_condition, $val, $side);
       return $this;
     }
 
@@ -214,7 +208,7 @@
     public function or_like($key_condition, $val = NULL, $side = 'both')
     {
       $this->or_like[] = array($key_condition, $val, $side);
-      $this->ci->db->or_like($key_condition, $val, $side);
+      $this->builder->orLike($key_condition, $val, $side);
       return $this;
     }
 
@@ -283,11 +277,11 @@
     */
     private function get_paging()
     {
-      $iStart = $this->ci->input->post('start');
-      $iLength = $this->ci->input->post('length');
+      $iStart = $this->request->getPost('start');
+      $iLength = $this->request->getPost('length');
 
       if($iLength != '' && $iLength != '-1')
-        $this->ci->db->limit($iLength, ($iStart)? $iStart : 0);
+        $this->builder->limit($iLength, ($iStart)? $iStart : 0);
     }
 
     /**
@@ -298,15 +292,15 @@
     private function get_ordering()
     {
 
-      $Data = $this->ci->input->post('columns');
+      $Data = $this->request->getPost('columns');
 
 
-      if ($this->ci->input->post('order'))
-        foreach ($this->ci->input->post('order') as $key)
+      if ($this->request->getPost('order'))
+        foreach ($this->request->getPost('order') as $key)
           if($this->check_cType())
-            $this->ci->db->order_by($Data[$key['column']]['data'], $key['dir']);
+            $this->builder->orderBy($Data[$key['column']]['data'], $key['dir']);
           else
-            $this->ci->db->order_by($this->columns[$key['column']] , $key['dir']);
+            $this->builder->orderBy($this->columns[$key['column']] , $key['dir']);
 
     }
 
@@ -318,11 +312,11 @@
     private function get_filtering()
     {
 
-      $mColArray = $this->ci->input->post('columns');
+      $mColArray = $this->request->getPost('columns');
 
       $sWhere = '';
-      $search = $this->ci->input->post('search');
-      $sSearch = $this->ci->db->escape_like_str(trim($search['value']));
+      $search = $this->request->getPost('search');
+      $sSearch = trim($search['value']);
       $columns = array_values(array_diff($this->columns, $this->unset_columns));
 
       if($sSearch != '')
@@ -337,12 +331,12 @@
       $sWhere = substr_replace($sWhere, '', -3);
 
       if($sWhere != '')
-        $this->ci->db->where('(' . $sWhere . ')');
+        $this->builder->where('(' . $sWhere . ')');
 
       // TODO : sRangeSeparator
 
       foreach($this->filter as $val)
-        $this->ci->db->where($val[0], $val[1], $val[2]);
+        $this->builder->where($val[0], $val[1], $val[2]);
     }
 
     /**
@@ -352,7 +346,7 @@
     */
     private function get_display_result()
     {
-      return $this->ci->db->get();
+      return $this->builder->get();
     }
 
     /**
@@ -373,7 +367,7 @@
         $iFilteredTotal = $this->get_total_results(TRUE);
       }
 
-      foreach($rResult->result_array() as $row_key => $row_val)
+      foreach($rResult->getResultArray() as $row_key => $row_val)
       {
         $aaData[$row_key] =  ($this->check_cType())? $row_val : array_values($row_val);
 
@@ -399,7 +393,7 @@
       {
         $sOutput = array
         (
-          'draw'                => intval($this->ci->input->post('draw')),
+          'draw'                => intval($this->request->getPost('draw')),
           'recordsTotal'        => $iTotal,
           'recordsFiltered'     => $iFilteredTotal,
           'data'                => $aaData
@@ -421,40 +415,42 @@
     */
     private function get_total_results($filtering = FALSE)
     {
-      $this->ci->db->from($this->table);
+      $this->builder->from($this->table, true);
 	    
       if($filtering)
         $this->get_filtering();
 
       foreach($this->joins as $val)
-        $this->ci->db->join($val[0], $val[1], $val[2]);
+        $this->builder->join($val[0], $val[1], $val[2]);
 
       foreach($this->where as $val)
-        $this->ci->db->where($val[0], $val[1], $val[2]);
+        $this->builder->where($val[0], $val[1], $val[2]);
 
       foreach($this->or_where as $val)
-        $this->ci->db->or_where($val[0], $val[1], $val[2]);
+        $this->builder->orWhere($val[0], $val[1], $val[2]);
         
       foreach($this->where_in as $val)
-        $this->ci->db->where_in($val[0], $val[1]);
+        $this->builder->whereIn($val[0], $val[1]);
 
       foreach($this->group_by as $val)
-        $this->ci->db->group_by($val);
+        $this->builder->groupBy($val);
 
       foreach($this->like as $val)
-        $this->ci->db->like($val[0], $val[1], $val[2]);
+        $this->builder->like($val[0], $val[1], $val[2]);
 
       foreach($this->or_like as $val)
-        $this->ci->db->or_like($val[0], $val[1], $val[2]);
+        $this->builder->orLike($val[0], $val[1], $val[2]);
 
       if(strlen($this->distinct) > 0)
       {
-        $this->ci->db->distinct();
-        $this->ci->db->select($this->select);
+        $this->builder->distinct();
+        $this->builder->select($this->select);
       }
 
-      $query = $this->ci->db->get(NULL, NULL, NULL, FALSE);
-      return $query->num_rows();
+      // echo $this->builder->getCompiledSelect(); die();
+
+      $query = $this->builder->get();
+      return $this->builder->countAll();
     }
 
     /**
@@ -511,7 +507,7 @@
     */
     private function check_cType()
     {
-      $column = $this->ci->input->post('columns');
+      $column = $this->request->getPost('columns');
       if(is_numeric($column[0]['data']))
         return FALSE;
       else
@@ -636,8 +632,6 @@
      */
     public function last_query()
     {
-      return  $this->ci->db->last_query();
+      return  $this->builder->last_query();
     }
   }
-/* End of file Datatables.php */
-/* Location: ./application/libraries/Datatables.php */
