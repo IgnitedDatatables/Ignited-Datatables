@@ -4,8 +4,7 @@ This is was adjusting version for CodeIgniter 4
 Changelog:
 - Change "from" method name to "table"
 
-This adjustment is make change how to write the code
-For this version, the table method should be called first, like so:
+This adjustment is make change how to write the code. For this version, the table method should be called first, like so:
 
 
 
