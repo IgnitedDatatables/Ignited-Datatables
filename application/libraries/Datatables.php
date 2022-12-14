@@ -65,6 +65,7 @@
     {
       foreach($this->explode(',', $columns) as $val)
       {
+	$val = trim(preg_replace('/\s+/', ' ', $val)); // Remove New Lines
         $column = trim(preg_replace('/(.*)\s+as\s+(\w*)/i', '$2', $val));
         $column = preg_replace('/.*\.(.*)/i', '$1', $column); // get name after `.`
         $this->columns[] =  $column;
